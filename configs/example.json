@@ -1,0 +1,18 @@
+[
+  {
+    "type": "security",
+    "code": 10000,
+    "level": "high",
+    "data": {
+      "test": "sendevent"
+    }
+  },
+  {
+    "type": "security",
+    "code": 10000,
+    "level": "medium",
+    "data": {
+      "test": "other"
+    }
+  }
+]

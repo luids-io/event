@@ -1,0 +1,30 @@
+[
+    {
+        "name": "main",
+        "modules": [
+            {
+                "name": "archive",
+                "filters": [
+                    {
+                        "class": "basicexpr",
+                        "args": [
+                            "type",
+                            "==",
+                            "security"
+                        ]
+                    }
+                ],
+                "plugins": [
+                    {
+                        "class": "jsonwriter",
+                        "args": [
+                            "security-events.json"
+                        ]
+                    }
+                ],
+                "onsuccess": "next",
+                "onerror": "stop"
+            }
+        ]
+    }
+]

@@ -7,7 +7,7 @@ require (
 	github.com/gorilla/mux v1.7.3 // indirect
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/luids-io/common v0.0.0-20191024080137-0797e9b9ebcb
-	github.com/luids-io/core v0.0.0-20191024172358-303fab6c6930
+	github.com/luids-io/core v0.0.0-20191030182026-2c3b032dc259
 	github.com/luisguillenc/goconfig v0.0.0-20191024075953-57413864b1d6
 	github.com/luisguillenc/grpctls v0.0.0-20191021152419-e99d6682ee98 // indirect
 	github.com/luisguillenc/httphealth v0.0.0-20190715082354-ea83997a7f0a // indirect

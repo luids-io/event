@@ -60,6 +60,8 @@ github.com/luids-io/common v0.0.0-20191024080137-0797e9b9ebcb h1:JEzcFv81KXcTJS1
 github.com/luids-io/common v0.0.0-20191024080137-0797e9b9ebcb/go.mod h1:C0Mh01EMI67r4pgimVfxI60IrReIGx8cfWZi9dSq1pE=
 github.com/luids-io/core v0.0.0-20191024172358-303fab6c6930 h1:E97c3DJO3fdggFP008jyRYVSHFb2oM5Uwmv5ZmHglYE=
 github.com/luids-io/core v0.0.0-20191024172358-303fab6c6930/go.mod h1:QqS7yBlbHWAE1CYL+o/TH0ojoV7Xvb2CnHGUPT5THqA=
+github.com/luids-io/core v0.0.0-20191030182026-2c3b032dc259 h1:HUnNmtiRi9WoWOrHyBQIMlt96A28u9GGInw2jyWoOY0=
+github.com/luids-io/core v0.0.0-20191030182026-2c3b032dc259/go.mod h1:QqS7yBlbHWAE1CYL+o/TH0ojoV7Xvb2CnHGUPT5THqA=
 github.com/luisguillenc/goconfig v0.0.0-20191024075953-57413864b1d6 h1:/rapm+jySYEgeGoc7aSwv6I4OX2SnMFOTEUopPljTcg=
 github.com/luisguillenc/goconfig v0.0.0-20191024075953-57413864b1d6/go.mod h1:o21iQEIR0tO05yULoeoIX9tl3X/XXCsEGoP0tlRSVEE=
 github.com/luisguillenc/grpctls v0.0.0-20191021152419-e99d6682ee98 h1:2X0TEwBSjZgrA4hWByj4lzmSwQOl62+Vb96rhE4OCuE=

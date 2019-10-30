@@ -12,7 +12,7 @@ import (
 	"github.com/luids-io/core/apiservice"
 	"github.com/luids-io/core/event"
 	_ "github.com/luids-io/core/event/codes"
-	"github.com/luids-io/core/event/notify"
+	"github.com/luids-io/core/event/services/notify"
 	iconfig "github.com/luids-io/event/internal/config"
 	ifactory "github.com/luids-io/event/internal/factory"
 	"github.com/luids-io/event/pkg/eventproc"

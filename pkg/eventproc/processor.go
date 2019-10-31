@@ -130,6 +130,7 @@ func (p *Processor) Notify(ctx context.Context, e event.Event) (string, error) {
 	if p.closed {
 		return "", fmt.Errorf("processor not started")
 	}
+	e.Received = time.Now()
 	reqID := p.opts.guidGen()
 	//enqueues event to process
 	newreq := &Request{

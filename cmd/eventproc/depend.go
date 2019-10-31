@@ -18,10 +18,14 @@ import (
 	"github.com/luids-io/event/pkg/eventproc"
 	"github.com/luids-io/event/pkg/eventproc/stackbuilder"
 
+	// api services
+	_ "github.com/luids-io/core/event/services/archive"
+
 	// event plugins
 	_ "github.com/luids-io/event/pkg/filters/basicexpr"
 	_ "github.com/luids-io/event/pkg/plugins/executor"
 	_ "github.com/luids-io/event/pkg/plugins/jsonwriter"
+	_ "github.com/luids-io/event/pkg/plugins/archiver"
 )
 
 func createLogger(debug bool) (yalogi.Logger, error) {

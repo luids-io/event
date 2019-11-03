@@ -1,22 +1,34 @@
 #!/bin/bash
 
 ## Configuration variables. 
+NAME="event"
 RELEASE="v0.0.1"
 ARCH="amd64"
-SVC_USER=luevent
-ETC_DIR=/etc/luevent
+
+## Base dirs
 BIN_DIR=/usr/local/bin
-VAR_DIR=/var/lib/luevent
-CACHE_DIR=/var/cache/luevent
+ETC_DIR=/etc/luids
+VAR_DIR=/var/lib/luids
+CACHE_DIR=/var/cache/luids
 SYSTEMD_DIR=/etc/systemd/system
-DOWNLOAD_BASE="https://github.com/luids-io/event/releases/download"
-DOWNLOAD_URI="${DOWNLOAD_BASE}/${RELEASE}/luevent_${RELEASE}_linux_${ARCH}.tgz"
+
+## Service variables
+SVC_USER=lu${NAME}
+SVC_GROUP=luids
+
+## Binaries
+BINARIES="eventproc eventnotify"
+
+## Download
+DOWNLOAD_BASE="https://github.com/luids-io/${NAME}/releases/download"
+DOWNLOAD_URI="${DOWNLOAD_BASE}/${RELEASE}/${NAME}_${RELEASE}_linux_${ARCH}.tgz"
+
 ##
 
 die() { echo "error: $@" 1>&2 ; exit 1 ; }
 
 ## some checks
-for deps in "wget" "mktemp" "getent" "useradd" ; do
+for deps in "wget" "mktemp" "getent" "useradd" "groupadd" ; do
 	which $deps >/dev/null \
 		|| die "$deps is required!"
 done
@@ -38,18 +50,20 @@ while [ -n "$1" ]; do
 done
 
 echo
-echo "================="
-echo "luEvent installer "
-echo "================="
+echo "======================"
+echo "- luIDS installer:"
+echo "   ${NAME} ${RELEASE}"
+echo "======================"
 echo
 
 show_actions() {
 	echo "Warning! This script will commit the following changes to your system:"
 	echo ". Download and install binaries in '${BIN_DIR}'"
-	echo ". Create a system user '${SVC_USER}'"
-	echo ". Create data dir '${VAR_DIR}'"
-	echo ". Create cache dir '${CACHE_DIR}'"
-	echo ". Create config dir '${ETC_DIR}'"
+	echo ". Create system group '${SVC_GROUP}'"
+	echo ". Create system user '${SVC_USER}'"
+	echo ". Create data dirs in '${VAR_DIR}'"
+	echo ". Create cache dirs in '${CACHE_DIR}'"
+	echo ". Create config dirs in '${ETC_DIR}'"
 	[ -d $SYSTEMD_DIR ] && echo ". Copy systemd configurations to '${SYSTEMD_DIR}'"
 	echo ""
 }
@@ -116,6 +130,29 @@ do_install_bin() {
 	} &>>$LOG_FILE
 }
 
+do_setcap_net_admin() {
+	[ $# -eq 1 ] || die "${FUNCNAME}: unexpected number of params"
+	local binary=$1
+
+	local fpath="${BIN_DIR}/${binary}"
+	[ ! -f $fpath ] && log "$fpath not found!" && return 1
+
+	log "set net_admin capability to $fpath"
+	setcap CAP_NET_ADMIN=+eip $fpath &>>$LOG_FILE
+}
+
+
+do_setcap_bind() {
+	[ $# -eq 1 ] || die "${FUNCNAME}: unexpected number of params"
+	local binary=$1
+
+	local fpath="${BIN_DIR}/${binary}"
+	[ ! -f $fpath ] && log "$fpath not found!" && return 1
+
+	log "set bind capability to $fpath"
+	setcap CAP_NET_BIND_SERVICE=+eip $fpath &>>$LOG_FILE
+}
+
 do_unpackage() {
 	[ $# -eq 1 ] || die "${FUNCNAME}: unexpected number of params"
 	local tgzfile=$1
@@ -127,12 +164,15 @@ do_unpackage() {
 	tar -zxvf $src -C $TMP_DIR &>>$LOG_FILE
 }
 
-do_create_datadir() {
-	[ $# -ge 2 ] || die "${FUNCNAME}: unexpected number of params"
+do_create_dir() {
+	[ $# -ge 1 ] || die "${FUNCNAME}: unexpected number of params"
 	local datadir=$1
-	local datagrp=$2
-	local perm=1775
-	if [ $# -gt 2 ]; then
+	local datagrp=root
+	if [ $# -ge 2 ]; then
+		datagrp=$2
+	fi
+	local perm=755
+	if [ $# -ge 3 ]; then
 		perm=$3
 	fi
 
@@ -146,33 +186,58 @@ do_create_datadir() {
 	} &>>$LOG_FILE
 }
 
+do_create_sysgroup() {
+	[ $# -eq 1 ] || die "${FUNCNAME}: unexpected number of params"
+	local ngroup=$1
+
+	group_exists $ngroup && log "group $ngroup already exists" && return 1
+
+	log "groupadd $ngroup with params"
+	groupadd -r $ngroup &>>$LOG_FILE
+}
+
 do_create_sysuser() {
-	[ $# -eq 2 ] || die "${FUNCNAME}: unexpected number of params"
+	[ $# -ge 2 ] || die "${FUNCNAME}: unexpected number of params"
 	local nuser=$1
 	local nhome=$2
+	local ngroup=""
+	if [ $# -ge 3 ]; then
+		ngroup="$3"
+	fi
 
 	user_exists $nuser && log "user $nuser already exists" && return 1
-
-	log "useradd $nuser with params"
-	useradd -s /usr/sbin/nologin -r -M -d $nhome $nuser &>>$LOG_FILE
+	if [ "$ngroup" == "" ]; then
+		log "useradd $nuser as system user"
+		useradd -s /usr/sbin/nologin -r -M -d "$nhome" $nuser &>>$LOG_FILE
+	else
+		log "useradd $nuser as system user with group $ngroup"
+		useradd -s /usr/sbin/nologin -r -M -d "$nhome" -g $ngroup $nuser &>>$LOG_FILE
+	fi
 }
 
 ## steps
 install_binaries() {
 	step "Downloading and installing binaries"
+
 	if [ $OPT_OVERWRITE_BIN -eq 0 ]; then
-		[ -f ${BIN_DIR}/eventproc ] \
-			&& log "${BIN_DIR}/eventproc already exists" \
-			&& step_ok && return 0
+		for binary in $BINARIES; do
+			if [ -f ${BIN_DIR}/$binary ]; then
+				log "${BIN_DIR}/${binary} already exists, skip download"
+				step_ok
+				return 0
+			fi
+		done
 	fi
-	do_download "$DOWNLOAD_URI" luevent_linux.tgz
-	[ $? -ne 0 ] && step_err && return 1
 
-	do_unpackage luevent_linux.tgz
+	## download
+	do_download "$DOWNLOAD_URI" ${NAME}_linux.tgz
 	[ $? -ne 0 ] && step_err && return 1
-	do_clean_file luevent_linux.tgz
+	do_unpackage ${NAME}_linux.tgz
+	[ $? -ne 0 ] && step_err && return 1
+	do_clean_file ${NAME}_linux.tgz
 
-	for binary in "eventproc" "eventnotify" ; do
+	## deploy binaries
+	for binary in $BINARIES; do
 		do_install_bin $binary
 		[ $? -ne 0 ] && step_err && return 1
         	do_clean_file $binary
@@ -181,93 +246,136 @@ install_binaries() {
 	step_ok
 }
 
-create_system_user() {
-	step "Creating system user"
-	user_exists $SVC_USER \
-		&& log "user $SVC_USER already exists" && step_ok && return 0
-	
-	do_create_sysuser "$SVC_USER" "$VAR_DIR"
+create_system_group() {
+	step "Creating system group"
+
+	group_exists $SVC_GROUP \
+		&& log "group $SVC_GROUP already exists" && step_ok && return 0
+	do_create_sysgroup $SVC_GROUP
 	[ $? -ne 0 ] && step_err && return 1
 	
 	step_ok
 }
 
-create_data_dir() {
-	step "Creating data dir"
-	[ -d $VAR_DIR ] && log "$VAR_DIR already exists" && step_ok && return 0
+create_system_user() {
+	step "Creating system user"
 
-	do_create_datadir $VAR_DIR $SVC_USER 1770
+	user_exists $SVC_USER \
+		&& log "user $SVC_USER already exists" && step_ok && return 0
+	do_create_sysuser $SVC_USER $VAR_DIR $SVC_GROUP
 	[ $? -ne 0 ] && step_err && return 1
+
+	step_ok
+}
+
+create_data_dir() {
+	step "Creating data dirs"
+
+	if [ ! -d $VAR_DIR ]; then
+		do_create_dir $VAR_DIR
+		[ $? -ne 0 ] && step_err && return 1
+	else
+		log "$VAR_DIR already exists"
+	fi
+
+	if [ ! -d $VAR_DIR/$NAME ]; then
+		do_create_dir $VAR_DIR/$NAME $SVC_GROUP 1770
+		[ $? -ne 0 ] && step_err && return 1
+	else
+		log "$VAR_DIR/$NAME already exists"
+	fi
 
 	step_ok
 }
 
 create_cache_dir() {
-	step "Creating cache dir"
-	[ -d $CACHE_DIR ] && log "$CACHE_DIR already exists" && step_ok && return 0
+	step "Creating cache dirs"
 
-	do_create_datadir $CACHE_DIR $SVC_USER 1770
-	[ $? -ne 0 ] && step_err && return 1
+	if [ ! -d $CACHE_DIR ]; then
+		do_create_dir $CACHE_DIR
+		[ $? -ne 0 ] && step_err && return 1
+	else
+		log "$CACHE_DIR already exists"
+	fi
+
+	if [ ! -d $CACHE_DIR/$NAME ]; then
+		do_create_dir $CACHE_DIR/$NAME $SVC_GROUP 1770
+		[ $? -ne 0 ] && step_err && return 1
+	else
+		log "$CACHE_DIR/$NAME already exists"
+	fi
 
 	step_ok
 }
 
-create_config() {
-	step "Creating config dir with sample files"
+create_base_config() {
+	step "Creating base config"
+
+	## create dirs
 	if [ ! -d $ETC_DIR ]; then
-		log "creating dir $ETC_DIR"
-		{ mkdir -p $ETC_DIR \
-			&& chown root:root $ETC_DIR \
-			&& chmod 755 $ETC_DIR
-		} &>>$LOG_FILE
+		do_create_dir $ETC_DIR
 		[ $? -ne 0 ] && step_err && return 1
 
 		local ssldir="${ETC_DIR}/ssl"
-		log "creating dir $ssldir with subdirs"
-		{ mkdir -p ${ssldir}/certs  ${ssldir}/private \
-			&& chown root:root ${ssldir}/certs \
-			&& chmod 755 ${ssldir}/certs \
-			&& chown root:$SVC_USER ${ssldir}/private \
-			&& chmod 750 ${ssldir}/private
-		} &>>$LOG_FILE
+		do_create_dir $ssldir/certs
+		[ $? -ne 0 ] && step_err && return 1
+		do_create_dir $ssldir/private $SVC_GROUP 750
 		[ $? -ne 0 ] && step_err && return 1
 	else
 		log "$ETC_DIR already exists"
 	fi
 
-	if [ ! -f $ETC_DIR/eventproc.toml ]; then
-		log "creating $ETC_DIR/eventproc.toml"
-		{ cat > $ETC_DIR/eventproc.toml <<EOF
+	## create files
+	if [ ! -f $ETC_DIR/services.json ]; then
+		log "creating $ETC_DIR/services.json"
+		echo "[ ]" > $ETC_DIR/services.json
+	else
+		log "$ETC_DIR/services.json already exists"
+	fi
+
+	step_ok
+}
+
+create_service_config() {
+	step "Creating service config"
+
+	## create dirs
+	if [ ! -d $ETC_DIR/$NAME ]; then
+		do_create_dir $ETC_DIR/$NAME root
+		[ $? -ne 0 ] && step_err && return 1
+
+		do_create_dir $ETC_DIR/$NAME/stacks.d
+		[ $? -ne 0 ] && step_err && return 1
+	else
+		log "$ETC_DIR/$NAME already exists"
+	fi
+
+	## create files
+	if [ ! -f $ETC_DIR/$NAME/eventproc.toml ]; then
+		log "creating $ETC_DIR/$NAME/eventproc.toml"
+		{ cat > $ETC_DIR/$NAME/eventproc.toml <<EOF
 [eventproc]
-dirs      = [ "${ETC_DIR}/stacks.d" ]
+dirs      = [ "${ETC_DIR}/${NAME}/stacks.d" ]
 
 [stackbuild]
-datadir   = "${VAR_DIR}"
-cachedir  = "${CACHE_DIR}"
+datadir   = "${VAR_DIR}/${NAME}"
+cachedir  = "${CACHE_DIR}/${NAME}"
 
-#[grpc-notify]
-#listenuri  = "tcp://0.0.0.0:5851"
+[grpc-notify]
+listenuri = "tcp://127.0.0.1:5851"
+
+[apiservices]
+files     = [ "${ETC_DIR}/services.json" ]
 EOF
 		} &>>$LOG_FILE
 		[ $? -ne 0 ] && step_err && return 1
 	else
-		log "$ETC_DIR/eventproc.toml already exists"
+		log "$ETC_DIR/$NAME/eventproc.toml already exists"
 	fi
 
-	local stacksd=${ETC_DIR}/stacks.d
-	if [ ! -d $stacksd ]; then
-		log "creating dir $stacksd"
-		{ mkdir -p $stacksd \
-			&& chown root:root $stacksd \
-			&& chmod 755 $stacksd
-		} &>>$LOG_FILE
-		[ $? -ne 0 ] && step_err && return 1
-	else
-		log "$stacksd already exists"
-	fi
-	if [ ! -f $stacksd/main.json ]; then
-		log "creating $stacksd/main.json"
-		{ cat > $stacksd/main.json <<EOF
+	if [ ! -f $ETC_DIR/$NAME/stacks.d/main.json ]; then
+		log "creating $ETC_DIR/$NAME/stacks.d/main.json"
+		{ cat > $ETC_DIR/$NAME/stacks.d/main.json <<EOF
 [
   {
     "name": "main",
@@ -292,7 +400,7 @@ EOF
 		} &>>$LOG_FILE
 		[ $? -ne 0 ] && step_err && return 1
 	else
-		log "$stacksd/main.json already exists" && step_ok && return 0
+		log "$ETC_DIR/$NAME/stacks.d/main.json already exists" && step_ok && return 0
 	fi
 
 	step_ok
@@ -300,9 +408,9 @@ EOF
 
 install_systemd_services() {
 	step "Installing systemd services"
-	if [ ! -f $SYSTEMD_DIR/eventproc.service ]; then
-		log "creating $SYSTEMD_DIR/eventproc.service"
-		{ cat > $SYSTEMD_DIR/eventproc.service <<EOF
+	if [ ! -f $SYSTEMD_DIR/luids-eventproc.service ]; then
+		log "creating $SYSTEMD_DIR/luids-eventproc.service"
+		{ cat > $SYSTEMD_DIR/luids-eventproc.service <<EOF
 [Unit]
 Description=eventproc service
 After=network.target
@@ -313,7 +421,7 @@ Type=simple
 Restart=on-failure
 RestartSec=1
 User=$SVC_USER
-ExecStart=$BIN_DIR/eventproc --config $ETC_DIR/eventproc.toml
+ExecStart=$BIN_DIR/eventproc --config $ETC_DIR/$NAME/eventproc.toml
 
 [Install]
 WantedBy=multi-user.target
@@ -321,12 +429,12 @@ EOF
 		} &>>$LOG_FILE
 		[ $? -ne 0 ] && step_err && return 1
 	else
-		log "$SYSTEMD_DIR/eventproc.service already exists"
+		log "$SYSTEMD_DIR/luids-eventproc.service already exists"
 	fi
 
-	if [ ! -f $SYSTEMD_DIR/eventproc@.service ]; then
-		log "creating $SYSTEMD_DIR/eventproc@.service"
-		{ cat > $SYSTEMD_DIR/eventproc@.service <<EOF
+	if [ ! -f $SYSTEMD_DIR/luids-eventproc@.service ]; then
+		log "creating $SYSTEMD_DIR/luids-eventproc@.service"
+		{ cat > $SYSTEMD_DIR/luids-eventproc@.service <<EOF
 [Unit]
 Description=eventproc service per-config file
 After=network.target
@@ -337,7 +445,7 @@ Type=simple
 Restart=on-failure
 RestartSec=1
 User=$SVC_USER
-ExecStart=$BIN_DIR/eventproc--config $ETC_DIR/%i.toml
+ExecStart=$BIN_DIR/eventproc--config $ETC_DIR/$NAME/%i.toml
 
 [Install]
 WantedBy=multi-user.target
@@ -345,19 +453,20 @@ EOF
 		} &>>$LOG_FILE
 		[ $? -ne 0 ] && step_err && return 1
 	else
-		log "$SYSTEMD_DIR/eventproc@.service already exists"
+		log "$SYSTEMD_DIR/luids-eventproc@.service already exists"
 	fi
 
 	step_ok
 }
 
 ## main process
-
 install_binaries || die "Show $LOG_FILE"
+create_system_group || die "Show $LOG_FILE"
 create_system_user || die "Show $LOG_FILE"
 create_data_dir || die "Show $LOG_FILE"
 create_cache_dir || die "Show $LOG_FILE"
-create_config || die "Show $LOG_FILE"
+create_base_config || die "Show $LOG_FILE"
+create_service_config || die "Show $LOG_FILE"
 [ -d $SYSTEMD_DIR ] && { install_systemd_services || die "Show $LOG_FILE for details." ; }
 
 echo

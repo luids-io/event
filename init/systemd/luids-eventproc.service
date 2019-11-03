@@ -1,5 +1,5 @@
 [Unit]
-Description=eventproc service per-config file
+Description=eventproc service
 After=network.target
 StartLimitIntervalSec=0
 
@@ -8,7 +8,7 @@ Type=simple
 Restart=on-failure
 RestartSec=1
 User=luevent
-ExecStart=/usr/local/bin/eventproc --config /etc/luevent/%i.toml
+ExecStart=/usr/local/bin/eventproc --config /etc/luids/event/eventproc.toml
 
 [Install]
 WantedBy=multi-user.target

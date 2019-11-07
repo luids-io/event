@@ -11,7 +11,7 @@ import (
 )
 
 // StackBuilder is a factory for stackbuilder
-func StackBuilder(cfg *config.StackBuilderCfg, regsvc *apiservice.Registry, logger yalogi.Logger) (*stackbuilder.Builder, error) {
+func StackBuilder(cfg *config.StackBuilderCfg, regsvc apiservice.Discover, logger yalogi.Logger) (*stackbuilder.Builder, error) {
 	err := cfg.Validate()
 	if err != nil {
 		return nil, err

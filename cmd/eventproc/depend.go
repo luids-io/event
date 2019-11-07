@@ -23,9 +23,9 @@ import (
 
 	// event plugins
 	_ "github.com/luids-io/event/pkg/filters/basicexpr"
+	_ "github.com/luids-io/event/pkg/plugins/archiver"
 	_ "github.com/luids-io/event/pkg/plugins/executor"
 	_ "github.com/luids-io/event/pkg/plugins/jsonwriter"
-	_ "github.com/luids-io/event/pkg/plugins/archiver"
 )
 
 func createLogger(debug bool) (yalogi.Logger, error) {
@@ -33,9 +33,9 @@ func createLogger(debug bool) (yalogi.Logger, error) {
 	return cfactory.Logger(cfgLog, debug)
 }
 
-func createAPIServices(srv *serverd.Manager, logger yalogi.Logger) (*apiservice.Registry, error) {
+func createAPIServices(srv *serverd.Manager, logger yalogi.Logger) (apiservice.Discover, error) {
 	cfgServices := cfg.Data("apiservices").(*cconfig.APIServicesCfg)
-	registry, err := cfactory.APIServices(cfgServices, logger)
+	registry, err := cfactory.APIAutoloader(cfgServices, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +48,7 @@ func createAPIServices(srv *serverd.Manager, logger yalogi.Logger) (*apiservice.
 }
 
 // create stack builder
-func createStackBuilder(srv *serverd.Manager, regsvc *apiservice.Registry, logger yalogi.Logger) (*stackbuilder.Builder, error) {
+func createStackBuilder(srv *serverd.Manager, regsvc apiservice.Discover, logger yalogi.Logger) (*stackbuilder.Builder, error) {
 	cfgStackBuilder := cfg.Data("stackbuild").(*iconfig.StackBuilderCfg)
 	builder, err := ifactory.StackBuilder(cfgStackBuilder, regsvc, logger)
 	if err != nil {

@@ -23,7 +23,7 @@ type Builder struct {
 	opts   options
 	logger yalogi.Logger
 
-	regsvc *apiservice.Registry
+	regsvc apiservice.Discover
 	stacks map[string]*eventproc.Stack
 
 	startup  []func() error
@@ -73,7 +73,7 @@ func CacheDir(s string) Option {
 }
 
 // New instances a new builder
-func New(regsvc *apiservice.Registry, opt ...Option) *Builder {
+func New(regsvc apiservice.Discover, opt ...Option) *Builder {
 	opts := defaultOpts
 	for _, o := range opt {
 		o(&opts)

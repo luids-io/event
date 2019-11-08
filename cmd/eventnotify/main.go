@@ -12,7 +12,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gofrs/uuid"
 	"github.com/spf13/pflag"
 
 	"github.com/luids-io/core/event"
@@ -119,18 +118,11 @@ func main() {
 	}
 	// notify events
 	for _, e := range events {
-		if e.ID == "" {
-			nid, err := uuid.NewV4()
-			if err != nil {
-				logger.Fatalf("generating uuid: %v", err)
-			}
-			e.ID = nid.String()
-		}
 		if e.Source.Hostname == "" || e.Source.Program == "" {
 			e.Source = defaultSource
 		}
-		if e.Timestamp.IsZero() {
-			e.Timestamp = time.Now()
+		if e.Created.IsZero() {
+			e.Created = time.Now()
 		}
 		reqid, err := client.Notify(context.Background(), e)
 		if err != nil {

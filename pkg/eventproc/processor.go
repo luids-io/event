@@ -37,7 +37,6 @@ type Processor struct {
 
 // Request is used to store information of the event processing
 type Request struct {
-	ID         string
 	Event      event.Event
 	Enqueued   time.Time
 	Started    time.Time
@@ -130,21 +129,20 @@ func (p *Processor) Notify(ctx context.Context, e event.Event) (string, error) {
 	if p.closed {
 		return "", fmt.Errorf("processor not started")
 	}
+	e.ID = p.opts.guidGen()
 	e.Received = time.Now()
-	reqID := p.opts.guidGen()
 	//enqueues event to process
 	newreq := &Request{
-		ID:         reqID,
 		Event:      e,
 		Enqueued:   time.Now(),
 		StackTrace: make([]string, 0),
 		jumps:      make([]string, 0),
 	}
-	p.logger.Debugf("notify(%s) -> request(%s)", e.ID, reqID)
+	p.logger.Debugf("notify(%s)", e.ID)
 	if !p.closed {
 		p.events <- newreq
 	}
-	return reqID, nil
+	return e.ID, nil
 }
 
 // Close event processor

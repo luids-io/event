@@ -7,19 +7,19 @@ import (
 	"github.com/luisguillenc/serverd"
 	"github.com/luisguillenc/yalogi"
 
+	"github.com/luids-io/api/event/notify"
 	cconfig "github.com/luids-io/common/config"
 	cfactory "github.com/luids-io/common/factory"
 	"github.com/luids-io/core/apiservice"
 	"github.com/luids-io/core/event"
 	_ "github.com/luids-io/core/event/codes"
-	"github.com/luids-io/core/event/services/notify"
 	iconfig "github.com/luids-io/event/internal/config"
 	ifactory "github.com/luids-io/event/internal/factory"
 	"github.com/luids-io/event/pkg/eventproc"
 	"github.com/luids-io/event/pkg/eventproc/stackbuilder"
 
 	// api services
-	_ "github.com/luids-io/core/event/services/archive"
+	_ "github.com/luids-io/api/event/archive"
 
 	// event plugins
 	_ "github.com/luids-io/event/pkg/filters/basicexpr"

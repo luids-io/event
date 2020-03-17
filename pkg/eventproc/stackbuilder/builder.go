@@ -170,16 +170,6 @@ func (b *Builder) build(def ModuleDef) (*eventproc.Module, error) {
 	return module, nil
 }
 
-// Validate willl returns nil if the stacks builded are ok (no loops, etc)
-func (b *Builder) Validate() error {
-	_, ok := b.Stack("main")
-	if !ok {
-		return errors.New("main stack not found")
-	}
-	//TODO(luisguillenc): check loops
-	return nil
-}
-
 // Logger returns logger inside builder
 func (b *Builder) Logger() yalogi.Logger {
 	return b.logger
@@ -238,7 +228,7 @@ func (b *Builder) OnShutdown(f func() error) {
 
 // Start executes all registered functions.
 func (b *Builder) Start() error {
-	b.logger.Infof("starting stack-builder registered services")
+	b.logger.Infof("starting stack-builder services")
 	var ret error
 	for _, f := range b.startup {
 		err := f()
@@ -251,7 +241,7 @@ func (b *Builder) Start() error {
 
 // Shutdown executes all registered functions.
 func (b *Builder) Shutdown() error {
-	b.logger.Infof("shutting down stack-builder registered services")
+	b.logger.Infof("shutting down stack-builder services")
 	var ret error
 	for _, f := range b.shutdown {
 		err := f()

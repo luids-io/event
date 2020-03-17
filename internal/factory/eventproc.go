@@ -31,7 +31,7 @@ func EventProc(cfg *config.EventProcCfg, builder *stackbuilder.Builder, logger y
 	}
 	//build stacks
 	var main *eventproc.Stack
-	stacks := make([]*eventproc.Stack, 0, len(defs))
+	others := make([]*eventproc.Stack, 0, len(defs))
 	for _, def := range defs {
 		if def.Name == "" {
 			return nil, errors.New("stack name required")
@@ -43,17 +43,11 @@ func EventProc(cfg *config.EventProcCfg, builder *stackbuilder.Builder, logger y
 		if def.Name == "main" {
 			main = stack
 		} else {
-			stacks = append(stacks, stack)
+			others = append(others, stack)
 		}
 	}
-	//validates the stacks created
-	err = builder.Validate()
-	if err != nil {
-		return nil, fmt.Errorf("invalid stacks config: %v", err)
-	}
 	//creates a new processor with stacks
-	processor := eventproc.New(main, stacks, eventproc.NewHooks(),
-		eventproc.SetLogger(logger))
+	processor := eventproc.New(main, others, eventproc.SetLogger(logger))
 	return processor, nil
 }
 

@@ -51,6 +51,7 @@ type options struct {
 	workers  int
 	guidGen  GUIDGenerator
 	buffSize int
+	hooks    *Hooks
 }
 
 var defaultOptions = options{
@@ -58,6 +59,7 @@ var defaultOptions = options{
 	logger:   yalogi.LogNull,
 	guidGen:  defaultGUIDGen,
 	buffSize: 100,
+	hooks:    NewHooks(),
 }
 
 // Option defines Processor options
@@ -107,7 +109,7 @@ func SetBufferSize(n int) Option {
 }
 
 // New creates a new processor with stack as the main stack
-func New(main *Stack, others []*Stack, h *Hooks, opt ...Option) *Processor {
+func New(main *Stack, others []*Stack, opt ...Option) *Processor {
 	opts := defaultOptions
 	for _, o := range opt {
 		o(&opts)
@@ -118,9 +120,13 @@ func New(main *Stack, others []*Stack, h *Hooks, opt ...Option) *Processor {
 		events:  make(chan *Request, opts.buffSize),
 		main:    main,
 		stacks:  make(map[string]*Stack, len(others)),
-		hrunner: &hooksRunner{hooks: h},
+		hrunner: &hooksRunner{hooks: opts.hooks},
 	}
-	p.init(others, opts.workers)
+	//add other stacks
+	for _, stack := range others {
+		p.stacks[stack.name] = stack
+	}
+	p.init(opts.workers)
 	return p
 }
 
@@ -156,34 +162,27 @@ func (p *Processor) Close() {
 	p.wg.Wait()
 }
 
-func (p *Processor) init(others []*Stack, nworkers int) {
+func (p *Processor) init(nworkers int) {
 	p.logger.Debugf("starting event processor (%v workers)", nworkers)
-	//add other stacks
-	for _, stack := range others {
-		p.logger.Debugf("adding stack '%s'", stack.name)
-		p.stacks[stack.name] = stack
-	}
 	//create and init workers
 	p.wg.Add(nworkers)
 	for i := 0; i < nworkers; i++ {
 		wid := i
-		go func() {
-			defer p.wg.Done()
-			p.logger.Debugf("starting worker #%v", wid)
-			p.processWorker(wid)
-			p.logger.Debugf("closing worker #%v", wid)
-		}()
+		go p.processWorker(wid)
 	}
 }
 
 func (p *Processor) processWorker(workerid int) {
+	defer p.wg.Done()
+	p.logger.Debugf("starting worker %v", workerid)
 	for e := range p.events {
+		//process event
 		p.hrunner.beforeProc(e)
 		e.Started = time.Now()
 		status, _ := p.main.process(p, e)
 		e.Finished = time.Now()
 		p.hrunner.afterProc(e)
-
+		//check result action
 		if status.Action == ActionReturn ||
 			status.Action == ActionFinish ||
 			status.Action == ActionNext {
@@ -191,4 +190,5 @@ func (p *Processor) processWorker(workerid int) {
 			p.hrunner.finishProc(e)
 		}
 	}
+	p.logger.Debugf("closing worker %v", workerid)
 }

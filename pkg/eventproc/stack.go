@@ -10,6 +10,97 @@ import (
 	"github.com/luids-io/core/event"
 )
 
+// Stack is the struct used by the processor and contains the the modules that
+// will be executed
+type Stack struct {
+	name    string
+	modules []*Module
+}
+
+// NewStack returns a new Stack
+func NewStack(name string) *Stack {
+	c := &Stack{
+		name:    name,
+		modules: make([]*Module, 0),
+	}
+	return c
+}
+
+// Name returns the name of the stack
+func (c Stack) Name() string {
+	return c.name
+}
+
+// Add appends a module to the stack
+func (c *Stack) Add(m *Module) {
+	c.modules = append(c.modules, m)
+}
+
+func (c *Stack) process(p *Processor, e *Request) (status StackAction, last int) {
+	for idx, r := range c.modules {
+		e.StackTrace = append(e.StackTrace, fmt.Sprintf("%s.%s", c.name, r.Name))
+		p.hrunner.beforeModule(e)
+
+		last = idx
+		status = StackAction{Action: ActionNext}
+		apply := true
+		//check filters
+		if len(r.Filters) > 0 {
+			for _, filter := range r.Filters {
+				apply = filter(e.Event)
+				if !apply {
+					break //stop filtering
+				}
+			}
+		}
+		if apply {
+			status = r.OnSuccess
+			//exec plugins
+			if len(r.Plugins) > 0 {
+				for idx, plugin := range r.Plugins {
+					err := plugin(&e.Event)
+					if err != nil {
+						p.logger.Warnf("plugin execution trace %v idx %v: %v", e.StackTrace, idx, err)
+						status = r.OnError
+						break //stop exec
+					}
+				}
+			}
+		}
+		p.hrunner.afterModule(e)
+
+	LOOPJUMP:
+		for status.Action == ActionJump {
+			if status.Label == c.name {
+				p.logger.Errorf("loop autoreference in stack '%s': trace %v", c.name, e.StackTrace)
+				status = StackAction{Action: ActionStop}
+				break LOOPJUMP
+			}
+			for _, prev := range e.jumps {
+				if status.Label == prev {
+					p.logger.Errorf("loop find in stack '%s': trace %v", c.name, e.StackTrace)
+					status = StackAction{Action: ActionStop}
+					break LOOPJUMP
+				}
+			}
+			jmpstack, ok := p.stacks[status.Label]
+			if !ok {
+				p.logger.Errorf("can't find stack '%s': trace %v", status.Label, e.StackTrace)
+				status = StackAction{Action: ActionStop}
+				break LOOPJUMP
+			}
+			e.jumps = append(e.jumps, c.name)
+			status, _ = jmpstack.process(p, e)
+			e.jumps = e.jumps[:len(e.jumps)-1]
+		}
+
+		if status.Action != ActionNext {
+			return
+		}
+	}
+	return
+}
+
 // Module defines the information that will be stacked for the processing
 type Module struct {
 	// Name of the module, it must be unique in the stack
@@ -121,95 +212,4 @@ func (a *StackAction) UnmarshalJSON(data []byte) error {
 		}
 	}
 	return fmt.Errorf("cannot unmarshal action '%s'", s)
-}
-
-// Stack is the struct used by the processor and contains the the modules that
-// will be executed
-type Stack struct {
-	name    string
-	modules []*Module
-}
-
-// NewStack returns a new Stack
-func NewStack(name string) *Stack {
-	c := &Stack{
-		name:    name,
-		modules: make([]*Module, 0),
-	}
-	return c
-}
-
-// Name returns the name of the stack
-func (c Stack) Name() string {
-	return c.name
-}
-
-// Add appends a module to the stack
-func (c *Stack) Add(m *Module) {
-	c.modules = append(c.modules, m)
-}
-
-func (c *Stack) process(p *Processor, e *Request) (status StackAction, last int) {
-	for idx, r := range c.modules {
-		e.StackTrace = append(e.StackTrace, fmt.Sprintf("%s.%s", c.name, r.Name))
-		p.hrunner.beforeModule(e)
-
-		last = idx
-		status = StackAction{Action: ActionNext}
-		apply := true
-		//check filters
-		if len(r.Filters) > 0 {
-			for _, filter := range r.Filters {
-				apply = filter(e.Event)
-				if !apply {
-					break //stop filtering
-				}
-			}
-		}
-		if apply {
-			status = r.OnSuccess
-			//exec plugins
-			if len(r.Plugins) > 0 {
-				for idx, plugin := range r.Plugins {
-					err := plugin(&e.Event)
-					if err != nil {
-						p.logger.Warnf("plugin execution trace %v idx %v: %v", e.StackTrace, idx, err)
-						status = r.OnError
-						break //stop exec
-					}
-				}
-			}
-		}
-		p.hrunner.afterModule(e)
-
-	LOOPJUMP:
-		for status.Action == ActionJump {
-			if status.Label == c.name {
-				p.logger.Errorf("loop autoreference in stack '%s': trace %v", c.name, e.StackTrace)
-				status = StackAction{Action: ActionStop}
-				break LOOPJUMP
-			}
-			for _, prev := range e.jumps {
-				if status.Label == prev {
-					p.logger.Errorf("loop find in stack '%s': trace %v", c.name, e.StackTrace)
-					status = StackAction{Action: ActionStop}
-					break LOOPJUMP
-				}
-			}
-			jmpstack, ok := p.stacks[status.Label]
-			if !ok {
-				p.logger.Errorf("can't find stack '%s': trace %v", status.Label, e.StackTrace)
-				status = StackAction{Action: ActionStop}
-				break LOOPJUMP
-			}
-			e.jumps = append(e.jumps, c.name)
-			status, _ = jmpstack.process(p, e)
-			e.jumps = e.jumps[:len(e.jumps)-1]
-		}
-
-		if status.Action != ActionNext {
-			return
-		}
-	}
-	return
 }

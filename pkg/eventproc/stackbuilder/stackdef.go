@@ -13,8 +13,9 @@ import (
 
 // StackDef defines stack configuration
 type StackDef struct {
-	Name    string      `json:"name"`
-	Modules []ModuleDef `json:"modules,omitempty"`
+	Name     string      `json:"name"`
+	Disabled bool        `json:"disabled"`
+	Modules  []ModuleDef `json:"modules,omitempty"`
 }
 
 // ModuleDef defines configuration of the modules in the stack

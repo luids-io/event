@@ -356,12 +356,10 @@ create_service_config() {
 		{ cat > $ETC_DIR/$NAME/eventproc.toml <<EOF
 [eventproc]
 dirs      = [ "${ETC_DIR}/${NAME}/stacks.d" ]
-
-[stackbuild]
 datadir   = "${VAR_DIR}/${NAME}"
 cachedir  = "${CACHE_DIR}/${NAME}"
 
-[grpc-notify]
+[server-notify]
 listenuri = "tcp://127.0.0.1:5851"
 
 [apiservices]
@@ -412,7 +410,7 @@ install_systemd_services() {
 		log "creating $SYSTEMD_DIR/luids-eventproc.service"
 		{ cat > $SYSTEMD_DIR/luids-eventproc.service <<EOF
 [Unit]
-Description=eventproc service
+Description=eventproc luIDS service
 After=network.target
 StartLimitIntervalSec=0
 
@@ -436,7 +434,7 @@ EOF
 		log "creating $SYSTEMD_DIR/luids-eventproc@.service"
 		{ cat > $SYSTEMD_DIR/luids-eventproc@.service <<EOF
 [Unit]
-Description=eventproc service per-config file
+Description=eventproc luIDS service per-config file
 After=network.target
 StartLimitIntervalSec=0
 

@@ -1,5 +1,5 @@
 [Unit]
-Description=eventproc service
+Description=eventproc luIDS service
 After=network.target
 StartLimitIntervalSec=0
 

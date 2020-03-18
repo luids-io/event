@@ -15,7 +15,9 @@ require (
 	github.com/luisguillenc/ipfilter v0.0.0-20191023154707-42e682c09c34 // indirect
 	github.com/luisguillenc/serverd v0.0.0-20191023154121-6906842334ec
 	github.com/luisguillenc/yalogi v0.0.0-20190329093036-2b8db3a816d3
+	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/sirupsen/logrus v1.4.2 // indirect
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.6.2
+	google.golang.org/grpc v1.21.0
 )

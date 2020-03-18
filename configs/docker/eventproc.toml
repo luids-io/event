@@ -1,8 +1,6 @@
 [eventproc]
-dirs      = [ "/etc/luevent/stacks.d" ]
+dirs      = [ "/etc/luids/event/stacks.d" ]
+datadir   = "/var/lib/luids/event"
 
-[stackbuild]
-datadir   = "/var/lib/luevent"
-
-[grpc-notify]
+[server-notify]
 listenuri  = "tcp://0.0.0.0:5851"

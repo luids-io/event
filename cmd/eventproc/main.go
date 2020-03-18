@@ -73,24 +73,24 @@ func main() {
 	}
 
 	// creates main server manager
-	srv := serverd.New(serverd.SetLogger(logger))
+	msrv := serverd.New(serverd.SetLogger(logger))
 
 	// create registry api services
-	regsvc, err := createAPIServices(srv, logger)
+	apisvc, err := createAPIServices(msrv, logger)
 	if err != nil {
 		logger.Fatalf("couldn't create registry: %v", err)
 	}
 
-	// create stack builder
-	builder, err := createStackBuilder(srv, regsvc, logger)
+	// create stacks
+	stacks, err := createStacks(apisvc, msrv, logger)
 	if err != nil {
-		logger.Fatalf("couldn't create stack builder: %v", err)
+		logger.Fatalf("couldn't create stacks: %v", err)
 	}
 
-	// create events processor
-	processor, err := createEventProc(srv, builder, logger)
+	// create event processor
+	eproc, err := createEventProc(stacks, msrv, logger)
 	if err != nil {
-		logger.Fatalf("couldn't create processor: %v", err)
+		logger.Fatalf("couldn't create eventproc: %v", err)
 	}
 
 	if dryRun {
@@ -99,19 +99,25 @@ func main() {
 	}
 
 	// creates notify server
-	err = createNotifySrv(srv, processor, logger)
+	gsrv, err := createNotifySrv(msrv, logger)
 	if err != nil {
 		logger.Fatalf("couldn't create notify server: %v", err)
 	}
 
+	// creates and register notify api
+	err = createNotifyAPI(gsrv, eproc, msrv, logger)
+	if err != nil {
+		logger.Fatalf("couldn't create notify api: %v", err)
+	}
+
 	// creates health server
-	err = createHealthSrv(srv, logger)
+	err = createHealthSrv(msrv, logger)
 	if err != nil {
 		logger.Fatalf("couldn't create health server: %v", err)
 	}
 
 	//run server
-	err = srv.Run()
+	err = msrv.Run()
 	if err != nil {
 		logger.Errorf("running server: %v", err)
 	}

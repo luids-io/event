@@ -88,8 +88,8 @@ func New(regsvc apiservice.Discover, opt ...Option) *Builder {
 	}
 }
 
-// Names returns the names of the stacks created by the builder
-func (b *Builder) Names() []string {
+// StackNames returns the names of the stacks created by the builder
+func (b *Builder) StackNames() []string {
 	names := make([]string, 0)
 	for k := range b.stacks {
 		names = append(names, k)
@@ -97,46 +97,56 @@ func (b *Builder) Names() []string {
 	return names
 }
 
-// Stack returns the stack with the name passed, it will returns false
+// GetStack returns the stack with the name passed, it will returns false
 // if the stack has not been built
-func (b *Builder) Stack(name string) (*eventproc.Stack, bool) {
+func (b *Builder) GetStack(name string) (*eventproc.Stack, bool) {
 	stack, ok := b.stacks[name]
 	return stack, ok
 }
 
 // Build construct a stack with the name passed and the modules defined by the
 // array ModuleDef
-func (b *Builder) Build(name string, defs []ModuleDef) (*eventproc.Stack, error) {
-	stack, ok := b.stacks[name]
+func (b *Builder) Build(def StackDef) (*eventproc.Stack, error) {
+	b.logger.Debugf("building '%s'", def.Name)
+	if def.Name == "" {
+		return nil, errors.New("stack name is empty")
+	}
+	stack, ok := b.stacks[def.Name]
 	if ok {
 		return nil, errors.New("stack name exists")
 	}
+	//check if disabled
+	if def.Disabled {
+		return nil, fmt.Errorf("'%s' is disabled", def.Name)
+	}
+	//create stack
+	stack = eventproc.NewStack(def.Name)
+	//create modules
 	names := make(map[string]bool)
-	stack = eventproc.NewStack(name)
-	for _, def := range defs {
-		if def.Name == "" {
+	for _, modDef := range def.Modules {
+		if modDef.Name == "" {
 			return nil, errors.New("module name empty")
 		}
-		if def.Disabled {
+		if modDef.Disabled {
 			continue
 		}
-		_, ok := names[def.Name]
+		_, ok := names[modDef.Name]
 		if ok {
-			return nil, fmt.Errorf("module name '%s' duplicated", def.Name)
+			return nil, fmt.Errorf("module name '%s' duplicated", modDef.Name)
 		}
-		names[def.Name] = true
+		names[modDef.Name] = true
 
-		module, err := b.build(def)
+		module, err := b.buildModule(modDef)
 		if err != nil {
-			return nil, fmt.Errorf("building module '%s': %v", def.Name, err)
+			return nil, fmt.Errorf("building module '%s': %v", modDef.Name, err)
 		}
 		stack.Add(module)
 	}
-	b.stacks[name] = stack
+	b.stacks[def.Name] = stack
 	return stack, nil
 }
 
-func (b *Builder) build(def ModuleDef) (*eventproc.Module, error) {
+func (b *Builder) buildModule(def ModuleDef) (*eventproc.Module, error) {
 	module := &eventproc.Module{
 		Name:      def.Name,
 		OnSuccess: def.OnSuccess,

@@ -22,15 +22,16 @@ LABEL maintainer="Luis Guillén Civera <luisguillenc@gmail.com>"
 RUN apk update && apk add --no-cache ca-certificates && update-ca-certificates
 
 # create user for service
-RUN adduser -D -g '' luevent && \
-	mkdir -p /var/lib/luevent && \
-	chown luevent /var/lib/luevent
+RUN adduser -D -g 'luids' luevent && \
+	mkdir -p /var/lib/luids/event && \
+	chown luids:luevent /var/lib/luids/event
 
 COPY --from=build-env /app/bin/* /bin/
-COPY --from=build-env /app/configs/docker/ /etc/luevent/
+COPY --from=build-env /app/configs/docker/services.json /etc/luids/
+COPY --from=build-env /app/configs/docker/eventproc/* /etc/luids/event/
 
 USER luevent
 
 EXPOSE 5851
-VOLUME [ "/etc/luevent", "/var/lib/luevent" ]
-CMD [ "/bin/eventproc" ]
+VOLUME [ "/etc/luids", "/var/lib/luids/event" ]
+CMD [ "/bin/eventproc", "--config", "/etc/luids/event/eventproc.toml" ]

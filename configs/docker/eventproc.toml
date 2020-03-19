@@ -1,6 +1,0 @@
-[eventproc]
-dirs      = [ "/etc/luids/event/stacks.d" ]
-datadir   = "/var/lib/luids/event"
-
-[server-notify]
-listenuri  = "tcp://0.0.0.0:5851"

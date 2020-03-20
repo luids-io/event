@@ -343,9 +343,6 @@ create_service_config() {
 	if [ ! -d $ETC_DIR/$NAME ]; then
 		do_create_dir $ETC_DIR/$NAME root
 		[ $? -ne 0 ] && step_err && return 1
-
-		do_create_dir $ETC_DIR/$NAME/stacks.d
-		[ $? -ne 0 ] && step_err && return 1
 	else
 		log "$ETC_DIR/$NAME already exists"
 	fi
@@ -355,7 +352,7 @@ create_service_config() {
 		log "creating $ETC_DIR/$NAME/eventproc.toml"
 		{ cat > $ETC_DIR/$NAME/eventproc.toml <<EOF
 [eventproc]
-dirs      = [ "${ETC_DIR}/${NAME}/stacks.d" ]
+files      = [ "${ETC_DIR}/stacks.json" ]
 datadir   = "${VAR_DIR}/${NAME}"
 cachedir  = "${CACHE_DIR}/${NAME}"
 
@@ -371,9 +368,9 @@ EOF
 		log "$ETC_DIR/$NAME/eventproc.toml already exists"
 	fi
 
-	if [ ! -f $ETC_DIR/$NAME/stacks.d/main.json ]; then
-		log "creating $ETC_DIR/$NAME/stacks.d/main.json"
-		{ cat > $ETC_DIR/$NAME/stacks.d/main.json <<EOF
+	if [ ! -f $ETC_DIR/$NAME/stacks.json ]; then
+		log "creating $ETC_DIR/$NAME/stacks.json"
+		{ cat > $ETC_DIR/$NAME/stacks.json <<EOF
 [
   {
     "name": "main",
@@ -398,7 +395,7 @@ EOF
 		} &>>$LOG_FILE
 		[ $? -ne 0 ] && step_err && return 1
 	else
-		log "$ETC_DIR/$NAME/stacks.d/main.json already exists" && step_ok && return 0
+		log "$ETC_DIR/$NAME/stacks.json already exists"
 	fi
 
 	step_ok

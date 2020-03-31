@@ -6,8 +6,6 @@ package main
 
 import (
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
-	"github.com/luisguillenc/serverd"
-	"github.com/luisguillenc/yalogi"
 	"google.golang.org/grpc"
 
 	notifyapi "github.com/luids-io/api/event/notify"
@@ -16,6 +14,8 @@ import (
 	"github.com/luids-io/core/apiservice"
 	"github.com/luids-io/core/event"
 	_ "github.com/luids-io/core/event/codes"
+	"github.com/luids-io/core/utils/serverd"
+	"github.com/luids-io/core/utils/yalogi"
 	iconfig "github.com/luids-io/event/internal/config"
 	ifactory "github.com/luids-io/event/internal/factory"
 	"github.com/luids-io/event/pkg/eventproc"

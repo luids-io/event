@@ -12,9 +12,8 @@ import (
 	"os"
 	"path"
 
-	"github.com/luisguillenc/yalogi"
-
 	"github.com/luids-io/core/apiservice"
+	"github.com/luids-io/core/utils/yalogi"
 	"github.com/luids-io/event/pkg/eventproc"
 )
 

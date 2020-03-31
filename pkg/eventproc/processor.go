@@ -14,9 +14,9 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
-	"github.com/luisguillenc/yalogi"
 
 	"github.com/luids-io/core/event"
+	"github.com/luids-io/core/utils/yalogi"
 )
 
 // Processor is the main class of the package.

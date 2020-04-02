@@ -5,6 +5,8 @@ package main
 // dependency injection functions
 
 import (
+	"fmt"
+
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"google.golang.org/grpc"
 
@@ -108,7 +110,7 @@ func createNotifySrv(msrv *serverd.Manager, logger yalogi.Logger) (*grpc.Server,
 		grpc_prometheus.Register(gsrv)
 	}
 	msrv.Register(serverd.Service{
-		Name:     "notify.server",
+		Name:     fmt.Sprintf("[%s].server", cfgServer.ListenURI),
 		Start:    func() error { go gsrv.Serve(glis); return nil },
 		Shutdown: gsrv.GracefulStop,
 		Stop:     gsrv.Stop,

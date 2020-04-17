@@ -1,9 +1,9 @@
 // Copyright 2019 Luis Guillén Civera <luisguillenc@gmail.com>. View LICENSE.
 
-// Package archiver implements a plugin for archive events.
+// Package forwarder implements a plugin for forward events.
 //
 // This package is a work in progress and makes no API stability promises.
-package archiver
+package forwarder
 
 import (
 	"context"
@@ -16,7 +16,7 @@ import (
 )
 
 // BuildClass defines default class name of component builder
-const BuildClass = "archiver"
+const BuildClass = "forwarder"
 
 // Plugin returns a plugin that archive events
 func Plugin() stackbuilder.PluginBuilder {
@@ -31,15 +31,15 @@ func Plugin() stackbuilder.PluginBuilder {
 		if !ok {
 			return nil, fmt.Errorf("service '%s' doesn't exist", sname)
 		}
-		archive, ok := service.(event.Archiver)
+		forwarder, ok := service.(event.Forwarder)
 		if !ok {
-			return nil, fmt.Errorf("service '%s' is not an archiver instance", sname)
+			return nil, fmt.Errorf("service '%s' is not a forwarder instance", sname)
 		}
 		//return module function
 		return func(e *event.Event) error {
-			sid, err := archive.SaveEvent(context.Background(), *e)
+			err := forwarder.ForwardEvent(context.Background(), *e)
 			if err == nil {
-				builder.Logger().Debugf("saved event: %s", sid)
+				builder.Logger().Debugf("forwarded event '%s' to '%s'", e.ID, sname)
 			}
 			return err
 		}, nil

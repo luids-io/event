@@ -99,15 +99,29 @@ func main() {
 	}
 
 	// creates notify server
-	gsrv, err := createNotifySrv(msrv, logger)
+	ngsrv, ok, err := createNotifySrv(msrv, logger)
 	if err != nil {
 		logger.Fatalf("couldn't create notify server: %v", err)
 	}
+	if ok {
+		// creates and register notify api
+		err = createNotifyAPI(ngsrv, eproc, msrv, logger)
+		if err != nil {
+			logger.Fatalf("couldn't create notify api: %v", err)
+		}
+	}
 
-	// creates and register notify api
-	err = createNotifyAPI(gsrv, eproc, msrv, logger)
+	// creates forward server
+	fgsrv, ok, err := createForwardSrv(msrv, logger)
 	if err != nil {
-		logger.Fatalf("couldn't create notify api: %v", err)
+		logger.Fatalf("couldn't create forward server: %v", err)
+	}
+	if ok {
+		// creates and register notify api
+		err = createForwardAPI(fgsrv, eproc, msrv, logger)
+		if err != nil {
+			logger.Fatalf("couldn't create forward api: %v", err)
+		}
 	}
 
 	// creates health server

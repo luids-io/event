@@ -359,6 +359,9 @@ cachedir  = "${CACHE_DIR}/${NAME}"
 [server-notify]
 listenuri = "tcp://127.0.0.1:5851"
 
+#[server-forward]
+#listenuri = "tcp://127.0.0.1:5852"
+
 [apiservices]
 files     = [ "${ETC_DIR}/services.json" ]
 EOF

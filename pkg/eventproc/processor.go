@@ -8,6 +8,7 @@ package eventproc
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"runtime"
 	"sync"
@@ -135,8 +136,17 @@ func (p *Processor) NotifyEvent(ctx context.Context, e event.Event) (string, err
 	if p.closed {
 		return "", fmt.Errorf("processor not started")
 	}
+	if e.ID != "" {
+		return "", errors.New("event id not empty")
+	}
+	if len(e.Processors) > 0 {
+		return "", errors.New("event processors not empty")
+	}
 	e.ID = p.opts.guidGen()
-	e.Received = time.Now()
+	e.Processors = []event.ProcessInfo{{
+		Received:  time.Now(),
+		Processor: event.GetDefaultSource(),
+	}}
 	//enqueues event to process
 	newreq := &Request{
 		Event:      e,
@@ -149,6 +159,42 @@ func (p *Processor) NotifyEvent(ctx context.Context, e event.Event) (string, err
 		p.events <- newreq
 	}
 	return e.ID, nil
+}
+
+// ForwardEvent implements event.Forwarder
+func (p *Processor) ForwardEvent(ctx context.Context, e event.Event) error {
+	if p.closed {
+		return fmt.Errorf("processor not started")
+	}
+	if e.ID == "" {
+		return errors.New("event id is empty")
+	}
+	if len(e.Processors) == 0 {
+		return errors.New("event processors is empty")
+	}
+	//check loop
+	source := event.GetDefaultSource()
+	for _, s := range e.Processors {
+		if source.Equals(s.Processor) {
+			return errors.New("detected forward loop")
+		}
+	}
+	//add current processor
+	e.Processors = append(e.Processors, event.ProcessInfo{
+		Received:  time.Now(),
+		Processor: source})
+	//enqueues event to process
+	newreq := &Request{
+		Event:      e,
+		Enqueued:   time.Now(),
+		StackTrace: make([]string, 0),
+		jumps:      make([]string, 0),
+	}
+	p.logger.Debugf("notify(%s)", e.ID)
+	if !p.closed {
+		p.events <- newreq
+	}
+	return nil
 }
 
 // Close event processor

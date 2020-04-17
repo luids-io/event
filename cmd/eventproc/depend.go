@@ -10,6 +10,7 @@ import (
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"google.golang.org/grpc"
 
+	forwardapi "github.com/luids-io/api/event/forward"
 	notifyapi "github.com/luids-io/api/event/notify"
 	cconfig "github.com/luids-io/common/config"
 	cfactory "github.com/luids-io/common/factory"
@@ -100,11 +101,26 @@ func createNotifyAPI(gsrv *grpc.Server, notifier event.Notifier, msrv *serverd.M
 	return nil
 }
 
-func createNotifySrv(msrv *serverd.Manager, logger yalogi.Logger) (*grpc.Server, error) {
-	cfgServer := cfg.Data("server-notify").(*cconfig.ServerCfg)
-	glis, gsrv, err := cfactory.Server(cfgServer)
+func createForwardAPI(gsrv *grpc.Server, forwarder event.Forwarder, msrv *serverd.Manager, logger yalogi.Logger) error {
+	gsvc, err := ifactory.EventForwardAPI(forwarder, logger)
 	if err != nil {
-		return nil, err
+		return err
+	}
+	forwardapi.RegisterServer(gsrv, gsvc)
+	return nil
+}
+
+func createNotifySrv(msrv *serverd.Manager, logger yalogi.Logger) (*grpc.Server, bool, error) {
+	cfgServer := cfg.Data("server-notify").(*cconfig.ServerCfg)
+	if cfgServer.Empty() {
+		return nil, false, nil
+	}
+	glis, gsrv, err := cfactory.Server(cfgServer)
+	if err == cfactory.ErrURIServerExists {
+		return gsrv, true, nil
+	}
+	if err != nil {
+		return nil, false, err
 	}
 	if cfgServer.Metrics {
 		grpc_prometheus.Register(gsrv)
@@ -115,5 +131,29 @@ func createNotifySrv(msrv *serverd.Manager, logger yalogi.Logger) (*grpc.Server,
 		Shutdown: gsrv.GracefulStop,
 		Stop:     gsrv.Stop,
 	})
-	return gsrv, nil
+	return gsrv, true, nil
+}
+
+func createForwardSrv(msrv *serverd.Manager, logger yalogi.Logger) (*grpc.Server, bool, error) {
+	cfgServer := cfg.Data("server-forward").(*cconfig.ServerCfg)
+	if cfgServer.Empty() {
+		return nil, false, nil
+	}
+	glis, gsrv, err := cfactory.Server(cfgServer)
+	if err == cfactory.ErrURIServerExists {
+		return gsrv, true, nil
+	}
+	if err != nil {
+		return nil, false, err
+	}
+	if cfgServer.Metrics {
+		grpc_prometheus.Register(gsrv)
+	}
+	msrv.Register(serverd.Service{
+		Name:     fmt.Sprintf("[%s].server", cfgServer.ListenURI),
+		Start:    func() error { go gsrv.Serve(glis); return nil },
+		Shutdown: gsrv.GracefulStop,
+		Stop:     gsrv.Stop,
+	})
+	return gsrv, true, nil
 }

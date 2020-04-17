@@ -3,6 +3,8 @@
 package config
 
 import (
+	"errors"
+
 	cconfig "github.com/luids-io/common/config"
 	"github.com/luids-io/core/utils/goconfig"
 	iconfig "github.com/luids-io/event/internal/config"
@@ -20,11 +22,15 @@ func Default(program string) *goconfig.Config {
 		},
 		goconfig.Section{
 			Name:     "server-notify",
-			Required: true,
-			Short:    true,
-			Data: &cconfig.ServerCfg{
-				ListenURI: "tcp://127.0.0.1:5851",
-			},
+			Required: false,
+			Short:    false,
+			Data:     &cconfig.ServerCfg{},
+		},
+		goconfig.Section{
+			Name:     "server-forward",
+			Required: false,
+			Short:    false,
+			Data:     &cconfig.ServerCfg{},
 		},
 		goconfig.Section{
 			Name:     "apiservices",
@@ -47,5 +53,14 @@ func Default(program string) *goconfig.Config {
 	if err != nil {
 		panic(err)
 	}
+	// add aditional validators
+	cfg.AddValidator(func(cfg *goconfig.Config) error {
+		noNotifyServer := cfg.Data("server-notify").Empty()
+		noForwardServer := cfg.Data("server-forward").Empty()
+		if noNotifyServer && noForwardServer {
+			return errors.New("'server-notify' or 'server-forward' sections required")
+		}
+		return nil
+	})
 	return cfg
 }

@@ -130,8 +130,8 @@ func New(main *Stack, others []*Stack, opt ...Option) *Processor {
 	return p
 }
 
-// Notify implements event.Notifier
-func (p *Processor) Notify(ctx context.Context, e event.Event) (string, error) {
+// NotifyEvent implements event.Notifier
+func (p *Processor) NotifyEvent(ctx context.Context, e event.Event) (string, error) {
 	if p.closed {
 		return "", fmt.Errorf("processor not started")
 	}

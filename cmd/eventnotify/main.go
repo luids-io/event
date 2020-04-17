@@ -124,7 +124,7 @@ func main() {
 		if e.Created.IsZero() {
 			e.Created = time.Now()
 		}
-		reqid, err := client.Notify(context.Background(), e)
+		reqid, err := client.NotifyEvent(context.Background(), e)
 		if err != nil {
 			logger.Fatalf("notify event: %v", err)
 		}

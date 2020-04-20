@@ -1,0 +1,87 @@
+[
+    {
+        "code": 10020,
+        "type": "security",
+        "codename": "tls.listed_sni",
+        "tags": [ "blacklist", "tls" ],
+        "description": "SNI [data.sni] in connection [data.ipsrc]->[data.ipdst]",
+        "fields": [
+            { "name": "streamid", "type": "string", "required": true },
+            { "name": "ipsrc", "type": "string", "required": true },
+            { "name": "ipdst", "type": "string", "required": true },
+            { "name": "sni", "type": "string", "required": true },
+            { "name": "reason", "type": "string" },
+            { "name": "score", "type": "int" }
+        ],
+        "raised_by": [
+            "github.com/luids-io/netanalyze/pkg/plugins/tlsproc/actions/checksni"
+        ]
+    },
+    {
+        "code": 10021,
+        "type": "security",
+        "codename": "tls.unlisted_sni",
+        "tags": [ "whitelist", "tls" ],
+        "description": "SNI [data.sni] not in connection [data.ipsrc]->[data.ipdst]",
+        "fields": [
+            { "name": "streamid", "type": "string", "required": true },
+            { "name": "ipsrc", "type": "string", "required": true },
+            { "name": "ipdst", "type": "string", "required": true },
+            { "name": "sni", "type": "string", "required": true },
+            { "name": "reason", "type": "string" },
+            { "name": "score", "type": "int" }
+        ],
+        "raised_by": [
+            "github.com/luids-io/netanalyze/pkg/plugins/tlsproc/actions/checksni"
+        ]
+    },
+    {
+        "code": 10022,
+        "type": "security",
+        "codename": "tls.invalid_certs",
+        "tags": [ "pki", "tls" ],
+        "description": "Invalid certs validating SNI [data.sni] with subject [data.subject] in connection [data.ipsrc]->[data.ipdst]",
+        "fields": [
+            { "name": "streamid", "type": "string", "required": true },
+            { "name": "ipsrc", "type": "string", "required": true },
+            { "name": "ipdst", "type": "string", "required": true },
+            { "name": "sni", "type": "string", "required": true },
+            { "name": "subject", "type": "string", "required": true }
+        ],
+        "raised_by": [
+            "github.com/luids-io/netanalyze/pkg/plugins/tlsproc/actions/verifycerts"
+        ]
+    },
+    {
+        "code": 10023,
+        "type": "security",
+        "codename": "tls.non_tls_data",
+        "tags": [ "unexpected", "tls" ],
+        "description": "Not TLS data in connection [data.ipsrc]->[data.ipdst]",
+        "fields": [
+            { "name": "streamid", "type": "string", "required": true },
+            { "name": "ipsrc", "type": "string", "required": true },
+            { "name": "ipdst", "type": "string", "required": true }
+        ],
+        "raised_by": [
+            "github.com/luids-io/netanalyze/pkg/plugins/tlsproc/actions/nontlsdata"
+        ]
+    },
+    {
+        "code": 10024,
+        "type": "security",
+        "codename": "tls.malware_detected",
+        "tags": [ "machine-learning", "tls" ],
+        "description": "Possible malware in TLS connection [data.ipsrc]->[data.ipdst] with probability [data.prob]",
+        "fields": [
+            { "name": "streamid", "type": "string", "required": true },
+            { "name": "ipsrc", "type": "string", "required": true },
+            { "name": "ipdst", "type": "string", "required": true },
+            { "name": "label", "type": "string", "required": true },
+            { "name": "prob", "type": "float", "required": true }
+        ],
+        "raised_by": [
+            "github.com/luids-io/netanalyze/pkg/plugins/tlsproc/actions/classifycon"
+        ]
+    }
+]

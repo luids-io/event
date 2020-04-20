@@ -17,6 +17,7 @@ import (
 	"github.com/gofrs/uuid"
 
 	"github.com/luids-io/core/event"
+	"github.com/luids-io/core/event/eventdb"
 	"github.com/luids-io/core/utils/yalogi"
 )
 
@@ -26,6 +27,7 @@ type Processor struct {
 	logger yalogi.Logger
 	//event channel
 	events chan *Request
+	db     eventdb.Database
 	// stacks
 	main   *Stack
 	stacks map[string]*Stack
@@ -110,7 +112,7 @@ func SetBufferSize(n int) Option {
 }
 
 // New creates a new processor with stack as the main stack
-func New(main *Stack, others []*Stack, opt ...Option) *Processor {
+func New(main *Stack, others []*Stack, db eventdb.Database, opt ...Option) *Processor {
 	opts := defaultOptions
 	for _, o := range opt {
 		o(&opts)
@@ -119,6 +121,7 @@ func New(main *Stack, others []*Stack, opt ...Option) *Processor {
 		opts:    opts,
 		logger:  opts.logger,
 		events:  make(chan *Request, opts.buffSize),
+		db:      db,
 		main:    main,
 		stacks:  make(map[string]*Stack, len(others)),
 		hrunner: &hooksRunner{hooks: opts.hooks},
@@ -136,17 +139,21 @@ func (p *Processor) NotifyEvent(ctx context.Context, e event.Event) (string, err
 	if p.closed {
 		return "", fmt.Errorf("processor not started")
 	}
-	if e.ID != "" {
-		return "", errors.New("event id not empty")
+	def, ok := p.db.FindByCode(e.Code)
+	if !ok {
+		return "", errors.New("event code not found")
 	}
-	if len(e.Processors) > 0 {
-		return "", errors.New("event processors not empty")
+	if err := def.ValidateData(e); err != nil {
+		return "", fmt.Errorf("event data not valid: %v", err)
 	}
+	// complete data
 	e.ID = p.opts.guidGen()
 	e.Processors = []event.ProcessInfo{{
 		Received:  time.Now(),
 		Processor: event.GetDefaultSource(),
 	}}
+	e = def.Complete(e)
+
 	//enqueues event to process
 	newreq := &Request{
 		Event:      e,

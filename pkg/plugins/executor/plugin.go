@@ -63,7 +63,7 @@ func getField(field string, e *event.Event) string {
 	case "code":
 		return strconv.Itoa(int(e.Code))
 	case "codename":
-		return e.Codename()
+		return e.Codename
 	case "type":
 		return e.Type.String()
 	case "level":

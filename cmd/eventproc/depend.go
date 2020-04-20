@@ -16,7 +16,7 @@ import (
 	cfactory "github.com/luids-io/common/factory"
 	"github.com/luids-io/core/apiservice"
 	"github.com/luids-io/core/event"
-	_ "github.com/luids-io/core/event/codes"
+	"github.com/luids-io/core/event/eventdb"
 	"github.com/luids-io/core/utils/serverd"
 	"github.com/luids-io/core/utils/yalogi"
 	iconfig "github.com/luids-io/event/internal/config"
@@ -79,9 +79,14 @@ func createStacks(asvc apiservice.Discover, msrv *serverd.Manager, logger yalogi
 	return builder, nil
 }
 
-func createEventProc(stacks *stackbuilder.Builder, msrv *serverd.Manager, logger yalogi.Logger) (*eventproc.Processor, error) {
+func createEventDB(logger yalogi.Logger) (eventdb.Database, error) {
+	cfgEventproc := cfg.Data("eventproc").(*iconfig.EventProcCfg)
+	return ifactory.EventDB(cfgEventproc, logger)
+}
+
+func createEventProc(stacks *stackbuilder.Builder, db eventdb.Database, msrv *serverd.Manager, logger yalogi.Logger) (*eventproc.Processor, error) {
 	cfgEventProc := cfg.Data("eventproc").(*iconfig.EventProcCfg)
-	proc, err := ifactory.EventProc(cfgEventProc, stacks, logger)
+	proc, err := ifactory.EventProc(cfgEventProc, stacks, db, logger)
 	if err != nil {
 		return nil, err
 	}

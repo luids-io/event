@@ -17,7 +17,7 @@ func Default(program string) *goconfig.Config {
 			Name:     "eventproc",
 			Required: true,
 			Data: &iconfig.EventProcCfg{
-				StackMain: "main",
+				Stack: iconfig.StackCfg{Main: "main"},
 			},
 		},
 		goconfig.Section{

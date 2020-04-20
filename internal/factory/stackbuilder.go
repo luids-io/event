@@ -33,7 +33,7 @@ func Stacks(cfg *config.EventProcCfg, b *stackbuilder.Builder, logger yalogi.Log
 		return fmt.Errorf("bad config: %v", err)
 	}
 	//get definitions
-	dbfiles, err := util.GetFilesDB("json", cfg.StackFiles, cfg.StackDirs)
+	dbfiles, err := util.GetFilesDB("json", cfg.Stack.Files, cfg.Stack.Dirs)
 	if err != nil {
 		return fmt.Errorf("loading dbfiles: %v", err)
 	}

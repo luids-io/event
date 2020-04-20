@@ -81,6 +81,12 @@ func main() {
 		logger.Fatalf("couldn't create registry: %v", err)
 	}
 
+	// create event database
+	db, err := createEventDB(logger)
+	if err != nil {
+		logger.Fatalf("couldn't create event database: %v", err)
+	}
+
 	// create stacks
 	stacks, err := createStacks(apisvc, msrv, logger)
 	if err != nil {
@@ -88,7 +94,7 @@ func main() {
 	}
 
 	// create event processor
-	eproc, err := createEventProc(stacks, msrv, logger)
+	eproc, err := createEventProc(stacks, db, msrv, logger)
 	if err != nil {
 		logger.Fatalf("couldn't create eventproc: %v", err)
 	}

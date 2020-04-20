@@ -347,14 +347,26 @@ create_service_config() {
 		log "$ETC_DIR/$NAME already exists"
 	fi
 
+	if [ ! -d $ETC_DIR/$NAME/events.d ]; then
+		do_create_dir $ETC_DIR/$NAME/events.d
+		[ $? -ne 0 ] && step_err && return 1
+	else
+		log "$ETC_DIR/$NAME/events.d already exists"
+	fi
+
 	## create files
 	if [ ! -f $ETC_DIR/$NAME/eventproc.toml ]; then
 		log "creating $ETC_DIR/$NAME/eventproc.toml"
 		{ cat > $ETC_DIR/$NAME/eventproc.toml <<EOF
 [eventproc]
-files      = [ "${ETC_DIR}/stacks.json" ]
 datadir   = "${VAR_DIR}/${NAME}"
 cachedir  = "${CACHE_DIR}/${NAME}"
+
+[eventproc.stack]
+files     = [ "${ETC_DIR}/stacks.json" ]
+
+[eventproc.db]
+dirs      = [ "${ETC_DIR}/events.d" ]
 
 [server-notify]
 listenuri = "tcp://127.0.0.1:5851"

@@ -1,6 +1,6 @@
 [
     {
-        "code": 10001,
+        "code": 10020,
         "type": "security",
         "codename": "dns.listed_domain",
         "tags": [ "blacklist", "dns" ],
@@ -17,7 +17,7 @@
         ]
     },
     {
-        "code": 10002,
+        "code": 10021,
         "type": "security",
         "codename": "dns.unlisted_domain",
         "tags": [ "whitelist", "dns" ],
@@ -34,7 +34,7 @@
         ]
     },
     {
-        "code": 10003,
+        "code": 10022,
         "type": "security",
         "codename": "dns.listed_ip",
         "tags": [ "blacklist", "dns" ],
@@ -51,7 +51,7 @@
         ]
     },
     {
-        "code": 10004,
+        "code": 10023,
         "type": "security",
         "codename": "dns.unlisted_ip",
         "tags": [ "whitelist", "dns" ],
@@ -68,7 +68,7 @@
         ]
     },
     {
-        "code": 10005,
+        "code": 10024,
         "type": "security",
         "codename": "dns.max_client_requests",
         "tags": [ "threshold", "dns" ],
@@ -81,7 +81,7 @@
         ]
     },
     {
-        "code": 10006,
+        "code": 10025,
         "type": "security",
         "codename": "dns.max_names_resolved_ip",
         "tags": [ "threshold", "dns" ],

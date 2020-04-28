@@ -1,6 +1,6 @@
 [
     {
-        "code": 10020,
+        "code": 10040,
         "type": "security",
         "codename": "tls.listed_sni",
         "tags": [ "blacklist", "tls" ],
@@ -18,7 +18,7 @@
         ]
     },
     {
-        "code": 10021,
+        "code": 10041,
         "type": "security",
         "codename": "tls.unlisted_sni",
         "tags": [ "whitelist", "tls" ],
@@ -36,7 +36,7 @@
         ]
     },
     {
-        "code": 10022,
+        "code": 10042,
         "type": "security",
         "codename": "tls.invalid_certs",
         "tags": [ "pki", "tls" ],
@@ -53,7 +53,7 @@
         ]
     },
     {
-        "code": 10023,
+        "code": 10043,
         "type": "security",
         "codename": "tls.non_tls_data",
         "tags": [ "unexpected", "tls" ],
@@ -68,7 +68,7 @@
         ]
     },
     {
-        "code": 10024,
+        "code": 10044,
         "type": "security",
         "codename": "tls.malware_detected",
         "tags": [ "machine-learning", "tls" ],
@@ -82,6 +82,22 @@
         ],
         "raised_by": [
             "github.com/luids-io/netanalyze/pkg/plugins/tlsproc/actions/classifycon"
+        ]
+    },
+    {
+        "code": 10045,
+        "type": "security",
+        "codename": "tls.sni_not_resolved",
+        "tags": [ "dns", "tls", "unexpected" ],
+        "description": "SNI [data.sni] in connection [data.ipsrc]->[data.ipdst] not resolved",
+        "fields": [
+            { "name": "streamid", "type": "string", "required": true },
+            { "name": "ipsrc", "type": "string", "required": true },
+            { "name": "ipdst", "type": "string", "required": true },
+            { "name": "sni", "type": "string" }
+        ],
+        "raised_by": [
+            "github.com/luids-io/netanalyze/pkg/plugins/tlsproc/actions/checkresolv"
         ]
     }
 ]

@@ -38,6 +38,11 @@ binaries: $(BINARIES)
 	@echo "$(WHALE) $@"
 
 
+database:
+	@echo "$(WHALE) $@"
+	database/scripts/update_readme.sh
+
+
 clean:
 	@echo "$(WHALE) $@"
 	@rm -f $(BINARIES)

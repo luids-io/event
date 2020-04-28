@@ -47,7 +47,7 @@ func createHealthSrv(srv *serverd.Manager, logger yalogi.Logger) error {
 }
 
 func createAPIServices(msrv *serverd.Manager, logger yalogi.Logger) (apiservice.Discover, error) {
-	cfgServices := cfg.Data("apiservices").(*cconfig.APIServicesCfg)
+	cfgServices := cfg.Data("ids.api").(*cconfig.APIServicesCfg)
 	registry, err := cfactory.APIAutoloader(cfgServices, logger)
 	if err != nil {
 		return nil, err
@@ -115,41 +115,24 @@ func createForwardAPI(gsrv *grpc.Server, forwarder event.Forwarder, msrv *server
 	return nil
 }
 
-func createNotifySrv(msrv *serverd.Manager, logger yalogi.Logger) (*grpc.Server, bool, error) {
-	cfgServer := cfg.Data("server-notify").(*cconfig.ServerCfg)
-	if cfgServer.Empty() {
-		return nil, false, nil
-	}
-	glis, gsrv, err := cfactory.Server(cfgServer)
-	if err == cfactory.ErrURIServerExists {
-		return gsrv, true, nil
-	}
-	if err != nil {
-		return nil, false, err
-	}
-	if cfgServer.Metrics {
-		grpc_prometheus.Register(gsrv)
-	}
-	msrv.Register(serverd.Service{
-		Name:     fmt.Sprintf("[%s].server", cfgServer.ListenURI),
-		Start:    func() error { go gsrv.Serve(glis); return nil },
-		Shutdown: gsrv.GracefulStop,
-		Stop:     gsrv.Stop,
-	})
-	return gsrv, true, nil
+func notifyAPIEnabled() bool {
+	cfgAPI := cfg.Data("eventproc.api.notify").(*iconfig.EventNotifyAPICfg)
+	return cfgAPI.Enable
 }
 
-func createForwardSrv(msrv *serverd.Manager, logger yalogi.Logger) (*grpc.Server, bool, error) {
-	cfgServer := cfg.Data("server-forward").(*cconfig.ServerCfg)
-	if cfgServer.Empty() {
-		return nil, false, nil
-	}
+func forwardAPIEnabled() bool {
+	cfgAPI := cfg.Data("eventproc.api.forward").(*iconfig.EventForwardAPICfg)
+	return cfgAPI.Enable
+}
+
+func createServer(msrv *serverd.Manager, logger yalogi.Logger) (*grpc.Server, error) {
+	cfgServer := cfg.Data("server").(*cconfig.ServerCfg)
 	glis, gsrv, err := cfactory.Server(cfgServer)
 	if err == cfactory.ErrURIServerExists {
-		return gsrv, true, nil
+		return gsrv, nil
 	}
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 	if cfgServer.Metrics {
 		grpc_prometheus.Register(gsrv)
@@ -160,5 +143,5 @@ func createForwardSrv(msrv *serverd.Manager, logger yalogi.Logger) (*grpc.Server
 		Shutdown: gsrv.GracefulStop,
 		Stop:     gsrv.Stop,
 	})
-	return gsrv, true, nil
+	return gsrv, nil
 }

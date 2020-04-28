@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path/filepath"
-	"strconv"
 	"time"
 
 	"github.com/spf13/pflag"
@@ -107,15 +105,7 @@ func main() {
 		logger.Fatalf("unmarshalling events: %v", err)
 	}
 	//get default source
-	hostname, err := os.Hostname()
-	if err != nil {
-		hostname = "unknown"
-	}
-	defaultSource := event.Source{
-		Hostname: hostname,
-		Program:  filepath.Base(os.Args[0]),
-		Instance: strconv.Itoa(os.Getpid()),
-	}
+	defaultSource := event.GetDefaultSource()
 	// notify events
 	for _, e := range events {
 		if e.Source.Hostname == "" || e.Source.Program == "" {

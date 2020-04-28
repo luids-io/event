@@ -16,7 +16,7 @@ func createLogger(debug bool) (yalogi.Logger, error) {
 
 func createClient(logger yalogi.Logger) (*notify.Client, error) {
 	//create dial
-	cfgDial := cfg.Data("").(*cconfig.ClientCfg)
+	cfgDial := cfg.Data("config").(*cconfig.ClientCfg)
 	dial, err := cfactory.ClientConn(cfgDial)
 	if err != nil {
 		return nil, err

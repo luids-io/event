@@ -368,13 +368,7 @@ files     = [ "${ETC_DIR}/stacks.json" ]
 [eventproc.db]
 dirs      = [ "${ETC_DIR}/events.d" ]
 
-[server-notify]
-listenuri = "tcp://127.0.0.1:5851"
-
-#[server-forward]
-#listenuri = "tcp://127.0.0.1:5852"
-
-[apiservices]
+[ids.api]
 files     = [ "${ETC_DIR}/services.json" ]
 EOF
 		} &>>$LOG_FILE

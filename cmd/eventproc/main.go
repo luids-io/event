@@ -104,27 +104,21 @@ func main() {
 		os.Exit(0)
 	}
 
-	// creates notify server
-	ngsrv, ok, err := createNotifySrv(msrv, logger)
+	// creates server
+	gsrv, err := createServer(msrv, logger)
 	if err != nil {
-		logger.Fatalf("couldn't create notify server: %v", err)
+		logger.Fatalf("couldn't create event server: %v", err)
 	}
-	if ok {
+	if notifyAPIEnabled() {
 		// creates and register notify api
-		err = createNotifyAPI(ngsrv, eproc, msrv, logger)
+		err = createNotifyAPI(gsrv, eproc, msrv, logger)
 		if err != nil {
 			logger.Fatalf("couldn't create notify api: %v", err)
 		}
 	}
-
-	// creates forward server
-	fgsrv, ok, err := createForwardSrv(msrv, logger)
-	if err != nil {
-		logger.Fatalf("couldn't create forward server: %v", err)
-	}
-	if ok {
-		// creates and register notify api
-		err = createForwardAPI(fgsrv, eproc, msrv, logger)
+	if forwardAPIEnabled() {
+		// creates and register forward api
+		err = createForwardAPI(gsrv, eproc, msrv, logger)
 		if err != nil {
 			logger.Fatalf("couldn't create forward api: %v", err)
 		}

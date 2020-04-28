@@ -21,19 +21,25 @@ func Default(program string) *goconfig.Config {
 			},
 		},
 		goconfig.Section{
-			Name:     "server-notify",
+			Name:     "eventproc.api.notify",
 			Required: false,
-			Short:    false,
-			Data:     &cconfig.ServerCfg{},
+			Data:     &iconfig.EventNotifyAPICfg{Enable: true},
 		},
 		goconfig.Section{
-			Name:     "server-forward",
+			Name:     "eventproc.api.forward",
 			Required: false,
-			Short:    false,
-			Data:     &cconfig.ServerCfg{},
+			Data:     &iconfig.EventForwardAPICfg{Enable: false},
 		},
 		goconfig.Section{
-			Name:     "apiservices",
+			Name:     "server",
+			Required: true,
+			Short:    true,
+			Data: &cconfig.ServerCfg{
+				ListenURI: "tcp://127.0.0.1:5851",
+			},
+		},
+		goconfig.Section{
+			Name:     "luids.api",
 			Required: false,
 			Data:     &cconfig.APIServicesCfg{},
 		},
@@ -55,10 +61,10 @@ func Default(program string) *goconfig.Config {
 	}
 	// add aditional validators
 	cfg.AddValidator(func(cfg *goconfig.Config) error {
-		noNotifyServer := cfg.Data("server-notify").Empty()
-		noForwardServer := cfg.Data("server-forward").Empty()
-		if noNotifyServer && noForwardServer {
-			return errors.New("'server-notify' or 'server-forward' sections required")
+		notify := cfg.Data("eventproc.api.notify").(*iconfig.EventNotifyAPICfg).Enable
+		forward := cfg.Data("eventproc.api.forward").(*iconfig.EventForwardAPICfg).Enable
+		if !notify && !forward {
+			return errors.New("'eventproc.api.notify' or 'eventproc.api.forward' sections is required")
 		}
 		return nil
 	})

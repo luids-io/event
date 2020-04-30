@@ -39,7 +39,7 @@ func Default(program string) *goconfig.Config {
 			},
 		},
 		goconfig.Section{
-			Name:     "luids.api",
+			Name:     "ids.api",
 			Required: false,
 			Data:     &cconfig.APIServicesCfg{},
 		},

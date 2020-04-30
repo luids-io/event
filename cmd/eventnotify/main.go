@@ -118,6 +118,6 @@ func main() {
 		if err != nil {
 			logger.Fatalf("notify event: %v", err)
 		}
-		fmt.Println("event notified with request id:", reqid)
+		fmt.Println(reqid)
 	}
 }

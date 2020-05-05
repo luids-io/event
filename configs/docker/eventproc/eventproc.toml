@@ -1,9 +1,14 @@
 [eventproc]
-files     = [ "/etc/luids/event/stacks.json" ]
 datadir   = "/var/lib/luids/event"
 
-[apiservices]
-files     = [ "/etc/luids/services.json" ]
+[eventproc.db]
+dirs    = [ "/etc/luids/event/event.d" ]
 
-[server-notify]
+[eventproc.stack]
+files   = [ "/etc/luids/event/stacks.json" ]
+
+[ids.api]
+files     = [ "/etc/luids/apiservices.json" ]
+
+[server]
 listenuri  = "tcp://0.0.0.0:5851"

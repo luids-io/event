@@ -8,13 +8,13 @@ package eventproc
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"runtime"
 	"sync"
 	"time"
 
 	"github.com/gofrs/uuid"
+	"google.golang.org/grpc/peer"
 
 	"github.com/luids-io/core/event"
 	"github.com/luids-io/core/event/eventdb"
@@ -45,8 +45,8 @@ type Request struct {
 	Started    time.Time
 	Finished   time.Time
 	StackTrace []string
+	Peer       *peer.Peer
 	jumps      []string
-	//Peer  *peer.Peer
 }
 
 type options struct {
@@ -137,14 +137,21 @@ func New(main *Stack, others []*Stack, db eventdb.Database, opt ...Option) *Proc
 // NotifyEvent implements event.Notifier
 func (p *Processor) NotifyEvent(ctx context.Context, e event.Event) (string, error) {
 	if p.closed {
-		return "", fmt.Errorf("processor not started")
+		return "", event.ErrUnavailable
+	}
+	var peerAddr string
+	peerData, ok := peer.FromContext(ctx)
+	if ok {
+		peerAddr = fmt.Sprintf("%v", peerData.Addr)
 	}
 	def, ok := p.db.FindByCode(e.Code)
 	if !ok {
-		return "", errors.New("event code not found")
+		p.logger.Warnf("event code '%v' not found (%s)", e.ID, peerAddr)
+		return "", event.ErrBadRequest
 	}
 	if err := def.ValidateData(e); err != nil {
-		return "", fmt.Errorf("event data not valid: %v", err)
+		p.logger.Warnf("event data not valid (%s): %v", peerAddr, err)
+		return "", event.ErrBadRequest
 	}
 	// complete data
 	e.ID = p.opts.guidGen()
@@ -158,6 +165,7 @@ func (p *Processor) NotifyEvent(ctx context.Context, e event.Event) (string, err
 	newreq := &Request{
 		Event:      e,
 		Enqueued:   time.Now(),
+		Peer:       peerData,
 		StackTrace: make([]string, 0),
 		jumps:      make([]string, 0),
 	}
@@ -171,29 +179,39 @@ func (p *Processor) NotifyEvent(ctx context.Context, e event.Event) (string, err
 // ForwardEvent implements event.Forwarder
 func (p *Processor) ForwardEvent(ctx context.Context, e event.Event) error {
 	if p.closed {
-		return fmt.Errorf("processor not started")
+		return event.ErrUnavailable
+	}
+	var peerAddr string
+	peerData, ok := peer.FromContext(ctx)
+	if ok {
+		peerAddr = fmt.Sprintf("%v", peerData.Addr)
 	}
 	if e.ID == "" {
-		return errors.New("event id is empty")
+		p.logger.Warnf("event id is empty (%s)", peerAddr)
+		return event.ErrBadRequest
 	}
 	if len(e.Processors) == 0 {
-		return errors.New("event processors is empty")
+		p.logger.Warnf("event '%s' processors is empty (%s)", e.ID, peerAddr)
+		return event.ErrBadRequest
 	}
 	//check loop
 	source := event.GetDefaultSource()
 	for _, s := range e.Processors {
 		if source.Equals(s.Processor) {
-			return errors.New("detected forward loop")
+			p.logger.Warnf("event '%s' detected forward loop (%s)", e.ID, peerAddr)
+			return event.ErrInternal
 		}
 	}
 	//add current processor
-	e.Processors = append(e.Processors, event.ProcessInfo{
-		Received:  time.Now(),
-		Processor: source})
+	e.Processors = append(e.Processors,
+		event.ProcessInfo{
+			Received:  time.Now(),
+			Processor: source})
 	//enqueues event to process
 	newreq := &Request{
 		Event:      e,
 		Enqueued:   time.Now(),
+		Peer:       peerData,
 		StackTrace: make([]string, 0),
 		jumps:      make([]string, 0),
 	}

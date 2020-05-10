@@ -16,9 +16,9 @@ import (
 	"github.com/gofrs/uuid"
 	"google.golang.org/grpc/peer"
 
-	"github.com/luids-io/core/event"
-	"github.com/luids-io/core/event/eventdb"
-	"github.com/luids-io/core/utils/yalogi"
+	"github.com/luids-io/api/event"
+	"github.com/luids-io/api/event/eventdb"
+	"github.com/luids-io/core/yalogi"
 )
 
 // Processor is the main class of the package.

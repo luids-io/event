@@ -6,7 +6,7 @@ import (
 	"errors"
 
 	cconfig "github.com/luids-io/common/config"
-	"github.com/luids-io/core/utils/goconfig"
+	"github.com/luids-io/core/goconfig"
 	iconfig "github.com/luids-io/event/internal/config"
 )
 

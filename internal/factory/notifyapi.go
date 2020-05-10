@@ -3,9 +3,9 @@
 package factory
 
 import (
-	notifyapi "github.com/luids-io/api/event/notify"
-	"github.com/luids-io/core/event"
-	"github.com/luids-io/core/utils/yalogi"
+	"github.com/luids-io/api/event"
+	notifyapi "github.com/luids-io/api/event/grpc/notify"
+	"github.com/luids-io/core/yalogi"
 )
 
 // EventNotifyAPI is a factory

@@ -12,7 +12,7 @@ import (
 
 	"github.com/spf13/pflag"
 
-	"github.com/luids-io/core/event"
+	"github.com/luids-io/api/event"
 	"github.com/luids-io/event/cmd/eventnotify/config"
 )
 

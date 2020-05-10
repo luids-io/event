@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/luids-io/core/event"
+	"github.com/luids-io/api/event"
 )
 
 // Stack is the struct used by the processor and contains the the modules that

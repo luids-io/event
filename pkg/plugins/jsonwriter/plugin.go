@@ -9,7 +9,7 @@ package jsonwriter
 import (
 	"errors"
 
-	"github.com/luids-io/core/event"
+	"github.com/luids-io/api/event"
 	"github.com/luids-io/event/pkg/eventproc"
 	"github.com/luids-io/event/pkg/eventproc/stackbuilder"
 )

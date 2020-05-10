@@ -6,8 +6,8 @@ package main
 
 import (
 	// api services
-	_ "github.com/luids-io/api/event/archive"
-	_ "github.com/luids-io/api/event/forward"
+	_ "github.com/luids-io/api/event/grpc/archive"
+	_ "github.com/luids-io/api/event/grpc/forward"
 
 	// event plugins
 	_ "github.com/luids-io/event/pkg/filters/basicexpr"

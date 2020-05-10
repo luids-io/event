@@ -3,10 +3,10 @@
 package main
 
 import (
-	"github.com/luids-io/api/event/notify"
+	"github.com/luids-io/api/event/grpc/notify"
 	cconfig "github.com/luids-io/common/config"
 	cfactory "github.com/luids-io/common/factory"
-	"github.com/luids-io/core/utils/yalogi"
+	"github.com/luids-io/core/yalogi"
 )
 
 func createLogger(debug bool) (yalogi.Logger, error) {

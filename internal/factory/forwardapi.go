@@ -3,9 +3,9 @@
 package factory
 
 import (
-	forwardapi "github.com/luids-io/api/event/forward"
-	"github.com/luids-io/core/event"
-	"github.com/luids-io/core/utils/yalogi"
+	"github.com/luids-io/api/event"
+	forwardapi "github.com/luids-io/api/event/grpc/forward"
+	"github.com/luids-io/core/yalogi"
 )
 
 // EventForwardAPI is a factory

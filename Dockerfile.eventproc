@@ -23,6 +23,7 @@ RUN apk update && apk add --no-cache ca-certificates && update-ca-certificates
 
 # create user for service
 RUN adduser -D -g 'luids' luevent && \
+	mkdir -p /etc/luids/event/event.d && \
 	mkdir -p /var/lib/luids/event && \
 	mkdir -p /var/cache/luids/event && \
 	chown luevent /var/lib/luids/event && \
@@ -31,7 +32,6 @@ RUN adduser -D -g 'luids' luevent && \
 COPY --from=build-env /app/bin/* /bin/
 COPY --from=build-env /app/configs/docker/apiservices.json /etc/luids/
 COPY --from=build-env /app/configs/docker/eventproc/* /etc/luids/event/
-COPY --from=build-env /app/database/*.json /etc/luids/event/event.d/
 
 USER luevent
 

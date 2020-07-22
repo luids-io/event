@@ -45,7 +45,8 @@ clean:
 
 docker:
 	@echo "$(WHALE) $@"
-	docker build -t eventproc -f Dockerfile.eventproc .
+	docker build -t eventproc -f Dockerfile.eventproc \
+		--build-arg github_user=${github_user} --build-arg github_token=${github_token} .
 
 ## Targets for Makefile.release
 .PHONY: release

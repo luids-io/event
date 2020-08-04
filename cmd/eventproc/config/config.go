@@ -67,10 +67,10 @@ func Default(program string) *goconfig.Config {
 	}
 	// add aditional validators
 	cfg.AddValidator(func(cfg *goconfig.Config) error {
-		notify := cfg.Data("eventproc.api.notify").(*iconfig.EventNotifyAPICfg).Enable
-		forward := cfg.Data("eventproc.api.forward").(*iconfig.EventForwardAPICfg).Enable
+		notify := cfg.Data("service.event.notify").(*iconfig.EventNotifyAPICfg).Enable
+		forward := cfg.Data("service.event.forward").(*iconfig.EventForwardAPICfg).Enable
 		if !notify && !forward {
-			return errors.New("'eventproc.api.notify' or 'eventproc.api.forward' sections is required")
+			return errors.New("'service.event.notify' or 'service.event.forward' sections is required")
 		}
 		return nil
 	})

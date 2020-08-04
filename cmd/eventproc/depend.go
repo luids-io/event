@@ -11,7 +11,6 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/luids-io/api/event"
-	"github.com/luids-io/api/event/eventdb"
 	forwardapi "github.com/luids-io/api/event/grpc/forward"
 	notifyapi "github.com/luids-io/api/event/grpc/notify"
 	cconfig "github.com/luids-io/common/config"
@@ -21,6 +20,7 @@ import (
 	"github.com/luids-io/core/yalogi"
 	iconfig "github.com/luids-io/event/internal/config"
 	ifactory "github.com/luids-io/event/internal/factory"
+	"github.com/luids-io/event/pkg/eventdb"
 	"github.com/luids-io/event/pkg/eventproc"
 	"github.com/luids-io/event/pkg/eventproc/stackbuilder"
 )
@@ -38,7 +38,7 @@ func createHealthSrv(srv *serverd.Manager, logger yalogi.Logger) error {
 			logger.Fatalf("creating health server: %v", err)
 		}
 		srv.Register(serverd.Service{
-			Name:     "health.server",
+			Name:     fmt.Sprintf("health.[%s]", cfgHealth.ListenURI),
 			Start:    func() error { go health.Serve(hlis); return nil },
 			Shutdown: func() { health.Close() },
 		})
@@ -53,7 +53,7 @@ func createAPIServices(msrv *serverd.Manager, logger yalogi.Logger) (apiservice.
 		return nil, err
 	}
 	msrv.Register(serverd.Service{
-		Name:     "apiservices.service",
+		Name:     "ids.api",
 		Ping:     registry.Ping,
 		Shutdown: func() { registry.CloseAll() },
 	})
@@ -72,7 +72,7 @@ func createStacks(asvc apiservice.Discover, msrv *serverd.Manager, logger yalogi
 		return nil, err
 	}
 	msrv.Register(serverd.Service{
-		Name:     "stacks.service",
+		Name:     "eventstacks",
 		Start:    builder.Start,
 		Shutdown: func() { builder.Shutdown() },
 	})
@@ -91,38 +91,36 @@ func createEventProc(stacks *stackbuilder.Builder, db eventdb.Database, msrv *se
 		return nil, err
 	}
 	msrv.Register(serverd.Service{
-		Name:     "eventproc.service",
+		Name:     "eventproc",
 		Shutdown: proc.Close,
 	})
 	return proc, nil
 }
 
 func createNotifyAPI(gsrv *grpc.Server, notifier event.Notifier, msrv *serverd.Manager, logger yalogi.Logger) error {
-	gsvc, err := ifactory.EventNotifyAPI(notifier, logger)
-	if err != nil {
-		return err
+	cfgAPI := cfg.Data("service.event.notify").(*iconfig.EventNotifyAPICfg)
+	if cfgAPI.Enable {
+		gsvc, err := ifactory.EventNotifyAPI(cfgAPI, notifier, logger)
+		if err != nil {
+			return err
+		}
+		notifyapi.RegisterServer(gsrv, gsvc)
+		msrv.Register(serverd.Service{Name: "service.event.notify"})
 	}
-	notifyapi.RegisterServer(gsrv, gsvc)
 	return nil
 }
 
 func createForwardAPI(gsrv *grpc.Server, forwarder event.Forwarder, msrv *serverd.Manager, logger yalogi.Logger) error {
-	gsvc, err := ifactory.EventForwardAPI(forwarder, logger)
-	if err != nil {
-		return err
+	cfgAPI := cfg.Data("service.event.forward").(*iconfig.EventForwardAPICfg)
+	if cfgAPI.Enable {
+		gsvc, err := ifactory.EventForwardAPI(cfgAPI, forwarder, logger)
+		if err != nil {
+			return err
+		}
+		forwardapi.RegisterServer(gsrv, gsvc)
+		msrv.Register(serverd.Service{Name: "service.event.forward"})
 	}
-	forwardapi.RegisterServer(gsrv, gsvc)
 	return nil
-}
-
-func notifyAPIEnabled() bool {
-	cfgAPI := cfg.Data("eventproc.api.notify").(*iconfig.EventNotifyAPICfg)
-	return cfgAPI.Enable
-}
-
-func forwardAPIEnabled() bool {
-	cfgAPI := cfg.Data("eventproc.api.forward").(*iconfig.EventForwardAPICfg)
-	return cfgAPI.Enable
 }
 
 func createServer(msrv *serverd.Manager, logger yalogi.Logger) (*grpc.Server, error) {
@@ -138,7 +136,7 @@ func createServer(msrv *serverd.Manager, logger yalogi.Logger) (*grpc.Server, er
 		grpc_prometheus.Register(gsrv)
 	}
 	msrv.Register(serverd.Service{
-		Name:     fmt.Sprintf("[%s].server", cfgServer.ListenURI),
+		Name:     fmt.Sprintf("server.[%s]", cfgServer.ListenURI),
 		Start:    func() error { go gsrv.Serve(glis); return nil },
 		Shutdown: gsrv.GracefulStop,
 		Stop:     gsrv.Stop,

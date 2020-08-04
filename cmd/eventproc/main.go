@@ -109,19 +109,17 @@ func main() {
 	if err != nil {
 		logger.Fatalf("couldn't create event server: %v", err)
 	}
-	if notifyAPIEnabled() {
-		// creates and register notify api
-		err = createNotifyAPI(gsrv, eproc, msrv, logger)
-		if err != nil {
-			logger.Fatalf("couldn't create notify api: %v", err)
-		}
+
+	// creates and register notify api (if enabled)
+	err = createNotifyAPI(gsrv, eproc, msrv, logger)
+	if err != nil {
+		logger.Fatalf("couldn't create notify api: %v", err)
 	}
-	if forwardAPIEnabled() {
-		// creates and register forward api
-		err = createForwardAPI(gsrv, eproc, msrv, logger)
-		if err != nil {
-			logger.Fatalf("couldn't create forward api: %v", err)
-		}
+
+	// creates and register forward api (if enabled)
+	err = createForwardAPI(gsrv, eproc, msrv, logger)
+	if err != nil {
+		logger.Fatalf("couldn't create forward api: %v", err)
 	}
 
 	// creates health server

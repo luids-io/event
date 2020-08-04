@@ -21,14 +21,20 @@ func Default(program string) *goconfig.Config {
 			},
 		},
 		goconfig.Section{
-			Name:     "eventproc.api.notify",
+			Name:     "service.event.notify",
 			Required: false,
-			Data:     &iconfig.EventNotifyAPICfg{Enable: true},
+			Data: &iconfig.EventNotifyAPICfg{
+				Enable: true,
+				Log:    true,
+			},
 		},
 		goconfig.Section{
-			Name:     "eventproc.api.forward",
+			Name:     "service.event.forward",
 			Required: false,
-			Data:     &iconfig.EventForwardAPICfg{Enable: false},
+			Data: &iconfig.EventForwardAPICfg{
+				Enable: false,
+				Log:    true,
+			},
 		},
 		goconfig.Section{
 			Name:     "server",

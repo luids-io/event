@@ -5,9 +5,9 @@ package factory
 import (
 	"fmt"
 
-	"github.com/luids-io/api/event/eventdb"
 	"github.com/luids-io/core/yalogi"
 	"github.com/luids-io/event/internal/config"
+	"github.com/luids-io/event/pkg/eventdb"
 	"github.com/luids-io/event/pkg/eventproc"
 	"github.com/luids-io/event/pkg/eventproc/stackbuilder"
 )

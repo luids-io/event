@@ -47,11 +47,7 @@ func Builder() eventproc.PluginBuilder {
 			}
 			b.Logger().Debugf("exec %v %v", app, fargs)
 			cmd := exec.Command(app, fargs...)
-			err := cmd.Run()
-			if err != nil {
-				return err
-			}
-			return nil
+			return cmd.Run()
 		}, nil
 	}
 }

@@ -19,26 +19,22 @@ type Stack struct {
 
 // NewStack returns a new Stack.
 func NewStack(name string) *Stack {
-	c := &Stack{
-		name:    name,
-		modules: make([]*Module, 0),
-	}
-	return c
+	return &Stack{name: name}
 }
 
 // Name returns the name of the stack.
-func (c Stack) Name() string {
-	return c.name
+func (s Stack) Name() string {
+	return s.name
 }
 
 // Add appends a module to the stack.
-func (c *Stack) Add(m *Module) {
-	c.modules = append(c.modules, m)
+func (s *Stack) Add(m *Module) {
+	s.modules = append(s.modules, m)
 }
 
-func (c *Stack) process(p *Processor, e *Request) (status StackAction, last int) {
-	for idx, r := range c.modules {
-		e.StackTrace = append(e.StackTrace, fmt.Sprintf("%s.%s", c.name, r.Name))
+func (s *Stack) process(p *Processor, e *Request) (status StackAction, last int) {
+	for idx, r := range s.modules {
+		e.StackTrace = append(e.StackTrace, fmt.Sprintf("%s.%s", s.name, r.Name))
 		p.hrunner.beforeModule(e)
 
 		last = idx
@@ -71,14 +67,14 @@ func (c *Stack) process(p *Processor, e *Request) (status StackAction, last int)
 
 	LOOPJUMP:
 		for status.Action == ActionJump {
-			if status.Label == c.name {
-				p.logger.Errorf("loop autoreference in stack '%s': trace %v", c.name, e.StackTrace)
+			if status.Label == s.name {
+				p.logger.Errorf("loop autoreference in stack '%s': trace %v", s.name, e.StackTrace)
 				status = StackAction{Action: ActionStop}
 				break LOOPJUMP
 			}
 			for _, prev := range e.jumps {
 				if status.Label == prev {
-					p.logger.Errorf("loop find in stack '%s': trace %v", c.name, e.StackTrace)
+					p.logger.Errorf("loop find in stack '%s': trace %v", s.name, e.StackTrace)
 					status = StackAction{Action: ActionStop}
 					break LOOPJUMP
 				}
@@ -89,7 +85,7 @@ func (c *Stack) process(p *Processor, e *Request) (status StackAction, last int)
 				status = StackAction{Action: ActionStop}
 				break LOOPJUMP
 			}
-			e.jumps = append(e.jumps, c.name)
+			e.jumps = append(e.jumps, s.name)
 			status, _ = jmpstack.process(p, e)
 			e.jumps = e.jumps[:len(e.jumps)-1]
 		}
@@ -122,23 +118,23 @@ type Module struct {
 	OnError StackAction
 }
 
-// ModuleFilter is a signature for functions that filters events
+// ModuleFilter is a signature for functions that filters events.
 type ModuleFilter func(e event.Event) (result bool)
 
-// ModulePlugin is a signature for functions that process events
+// ModulePlugin is a signature for functions that process events.
 type ModulePlugin func(e *event.Event) error
 
 // StackAction defines the actions returned by the modules to define the
-// processing flow
+// processing flow.
 type StackAction struct {
 	Action Action
 	Label  string
 }
 
-// Action defines the behaviours
+// Action defines the behaviours.
 type Action uint8
 
-// Several actions in rulechain
+// Several actions in rulechain.
 const (
 	ActionNext Action = iota
 	ActionStop
@@ -163,7 +159,7 @@ func (a StackAction) String() string {
 	return fmt.Sprintf("unkown(%d)", a.Action)
 }
 
-// MarshalJSON implements interface
+// MarshalJSON implements interface.
 func (a StackAction) MarshalJSON() ([]byte, error) {
 	s := ""
 	switch a.Action {
@@ -183,7 +179,7 @@ func (a StackAction) MarshalJSON() ([]byte, error) {
 	return json.Marshal(s)
 }
 
-// UnmarshalJSON implements interface
+// UnmarshalJSON implements interface.
 func (a *StackAction) UnmarshalJSON(data []byte) error {
 	var s string
 	if err := json.Unmarshal(data, &s); err != nil {

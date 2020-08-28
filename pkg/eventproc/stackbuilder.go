@@ -30,7 +30,7 @@ type Builder struct {
 	shutdown []func() error
 }
 
-// BuilderOption is used for builder configuration
+// BuilderOption is used for builder configuration.
 type BuilderOption func(*buildOpts)
 
 type buildOpts struct {
@@ -42,53 +42,51 @@ type buildOpts struct {
 
 var defaultBuildOpts = buildOpts{logger: yalogi.LogNull}
 
-// SetBuildLogger sets a logger for the component
+// SetBuildLogger sets a logger for the component.
 func SetBuildLogger(l yalogi.Logger) BuilderOption {
 	return func(o *buildOpts) {
 		o.logger = l
 	}
 }
 
-// CertsDir sets certificate dir
+// CertsDir sets certificate dir.
 func CertsDir(s string) BuilderOption {
 	return func(o *buildOpts) {
 		o.certsDir = s
 	}
 }
 
-// DataDir sets data dir
+// DataDir sets data dir.
 func DataDir(s string) BuilderOption {
 	return func(o *buildOpts) {
 		o.dataDir = s
 	}
 }
 
-// CacheDir sets source dir
+// CacheDir sets source dir.
 func CacheDir(s string) BuilderOption {
 	return func(o *buildOpts) {
 		o.cacheDir = s
 	}
 }
 
-// NewBuilder instances a new builder
+// NewBuilder instances a new builder.
 func NewBuilder(regsvc apiservice.Discover, opt ...BuilderOption) *Builder {
 	opts := defaultBuildOpts
 	for _, o := range opt {
 		o(&opts)
 	}
 	return &Builder{
-		opts:     opts,
-		logger:   opts.logger,
-		regsvc:   regsvc,
-		stacks:   make(map[string]*Stack),
-		startup:  make([]func() error, 0),
-		shutdown: make([]func() error, 0),
+		opts:   opts,
+		logger: opts.logger,
+		regsvc: regsvc,
+		stacks: make(map[string]*Stack),
 	}
 }
 
-// StackNames returns the names of the stacks created by the builder
+// StackNames returns the names of the stacks created by the builder.
 func (b *Builder) StackNames() []string {
-	names := make([]string, 0)
+	names := make([]string, 0, len(b.stacks))
 	for k := range b.stacks {
 		names = append(names, k)
 	}
@@ -96,7 +94,7 @@ func (b *Builder) StackNames() []string {
 }
 
 // Stack returns the stack with the name passed, it will returns false
-// if the stack has not been built
+// if the stack has not been built.
 func (b *Builder) Stack(name string) (*Stack, bool) {
 	stack, ok := b.stacks[name]
 	return stack, ok
@@ -178,17 +176,17 @@ func (b *Builder) buildModule(def ModuleDef) (*Module, error) {
 	return module, nil
 }
 
-// Logger returns logger inside builder
+// Logger returns logger inside builder.
 func (b *Builder) Logger() yalogi.Logger {
 	return b.logger
 }
 
-// Service returns apiservice with the id passed, returns false if not registered
+// Service returns apiservice with the id passed, returns false if not registered.
 func (b *Builder) Service(id string) (apiservice.Service, bool) {
 	return b.regsvc.GetService(id)
 }
 
-// CertPath returns path for certificate
+// CertPath returns path for certificate.
 func (b Builder) CertPath(cert string) string {
 	if path.IsAbs(cert) {
 		return cert
@@ -200,7 +198,7 @@ func (b Builder) CertPath(cert string) string {
 	return output
 }
 
-// DataPath returns path for data
+// DataPath returns path for data.
 func (b Builder) DataPath(data string) string {
 	if path.IsAbs(data) {
 		return data
@@ -212,7 +210,7 @@ func (b Builder) DataPath(data string) string {
 	return output
 }
 
-// CachePath returns path for cache
+// CachePath returns path for cache.
 func (b Builder) CachePath(data string) string {
 	if path.IsAbs(data) {
 		return data
@@ -260,12 +258,12 @@ func (b *Builder) Shutdown() error {
 	return ret
 }
 
-// RegisterFilter register a filter for the class name passed
+// RegisterFilter register a filter for the class name passed.
 func RegisterFilter(class string, f FilterBuilder) {
 	filterBuilders[class] = f
 }
 
-// RegisterPlugin register a plugin for the class name passed
+// RegisterPlugin register a plugin for the class name passed.
 func RegisterPlugin(class string, f PluginBuilder) {
 	pluginBuilders[class] = f
 }

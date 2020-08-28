@@ -8,6 +8,8 @@ import (
 	"os"
 )
 
+const dataBuffSize = 100
+
 type jsonfile struct {
 	path   string
 	file   *os.File

@@ -8,6 +8,7 @@ package eventproc
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"runtime"
 	"sync"
@@ -38,16 +39,8 @@ type Processor struct {
 	closed bool
 }
 
-// Request is used to store information of the event processing
-type Request struct {
-	Event      event.Event
-	Enqueued   time.Time
-	Started    time.Time
-	Finished   time.Time
-	StackTrace []string
-	Peer       *peer.Peer
-	jumps      []string
-}
+// Option defines Processor options.
+type Option func(*options)
 
 type options struct {
 	logger   yalogi.Logger
@@ -65,13 +58,10 @@ var defaultOptions = options{
 	hooks:    NewHooks(),
 }
 
-// Option defines Processor options
-type Option func(*options)
-
-// GUIDGenerator must returns a new unique Global ID for events
+// GUIDGenerator must returns a new unique Global ID for events.
 type GUIDGenerator func() string
 
-// Workers defines the number of goroutines used to event processing
+// Workers option defines the number of goroutines used to event processing.
 func Workers(n int) Option {
 	return func(o *options) {
 		if n > 0 {
@@ -80,14 +70,14 @@ func Workers(n int) Option {
 	}
 }
 
-// SetLogger sets a logger for the component
+// SetLogger option sets a logger for the component.
 func SetLogger(l yalogi.Logger) Option {
 	return func(o *options) {
 		o.logger = l
 	}
 }
 
-// SetGUIDGen sets a custom gid event generator
+// SetGUIDGen option sets a custom gid event generator.
 func SetGUIDGen(g GUIDGenerator) Option {
 	return func(o *options) {
 		o.guidGen = g
@@ -102,7 +92,7 @@ var defaultGUIDGen GUIDGenerator = func() string {
 	return newid.String()
 }
 
-// SetBufferSize defines the size of the event requests buffer
+// SetBufferSize option defines the size of the event request buffer.
 func SetBufferSize(n int) Option {
 	return func(o *options) {
 		if n > 0 {
@@ -111,7 +101,7 @@ func SetBufferSize(n int) Option {
 	}
 }
 
-// New creates a new processor with stack as the main stack
+// New creates a new processor with stack as the main stack.
 func New(main *Stack, others []*Stack, db eventdb.Database, opt ...Option) *Processor {
 	opts := defaultOptions
 	for _, o := range opt {
@@ -134,26 +124,22 @@ func New(main *Stack, others []*Stack, db eventdb.Database, opt ...Option) *Proc
 	return p
 }
 
-// NotifyEvent implements event.Notifier
+// NotifyEvent implements event.Notifier.
 func (p *Processor) NotifyEvent(ctx context.Context, e event.Event) (string, error) {
 	if p.closed {
 		return "", event.ErrUnavailable
 	}
-	var peerAddr string
-	peerData, ok := peer.FromContext(ctx)
-	if ok {
-		peerAddr = fmt.Sprintf("%v", peerData.Addr)
-	}
-	def, ok := p.db.FindByCode(e.Code)
-	if !ok {
-		p.logger.Warnf("event code '%v' not found (%s)", e.ID, peerAddr)
+	// gets peer info
+	peerData, peerAddr := getPeerAddr(ctx)
+
+	// checks event
+	def, err := p.validateNotify(e)
+	if err != nil {
+		p.logger.Warnf("eventproc: [peer=%s] notify event: %v", peerAddr, err)
 		return "", event.ErrBadRequest
 	}
-	if err := def.ValidateData(e); err != nil {
-		p.logger.Warnf("event data not valid (%s): %v", peerAddr, err)
-		return "", event.ErrBadRequest
-	}
-	// complete data
+
+	// complete event data
 	e.ID = p.opts.guidGen()
 	e.Processors = []event.ProcessInfo{{
 		Received:  time.Now(),
@@ -162,79 +148,56 @@ func (p *Processor) NotifyEvent(ctx context.Context, e event.Event) (string, err
 	e = def.Complete(e)
 
 	//enqueues event to process
-	newreq := &Request{
-		Event:      e,
-		Enqueued:   time.Now(),
-		Peer:       peerData,
-		StackTrace: make([]string, 0),
-		jumps:      make([]string, 0),
-	}
-	p.logger.Debugf("notify(%s)", e.ID)
-	if !p.closed {
-		p.events <- newreq
-	}
-	return e.ID, nil
+	return e.ID, p.queueEvent(e, peerData)
 }
 
-// ForwardEvent implements event.Forwarder
+// ForwardEvent implements event.Forwarder.
 func (p *Processor) ForwardEvent(ctx context.Context, e event.Event) error {
 	if p.closed {
 		return event.ErrUnavailable
 	}
-	var peerAddr string
-	peerData, ok := peer.FromContext(ctx)
-	if ok {
-		peerAddr = fmt.Sprintf("%v", peerData.Addr)
-	}
-	if e.ID == "" {
-		p.logger.Warnf("event id is empty (%s)", peerAddr)
+	// gets peer info
+	peerData, peerAddr := getPeerAddr(ctx)
+
+	// checks event
+	err := p.validateForward(e)
+	if err != nil {
+		p.logger.Warnf("eventproc: [peer=%s] forward event: %v", peerAddr, err)
 		return event.ErrBadRequest
 	}
-	if len(e.Processors) == 0 {
-		p.logger.Warnf("event '%s' processors is empty (%s)", e.ID, peerAddr)
-		return event.ErrBadRequest
-	}
-	//check loop
-	source := event.GetDefaultSource()
-	for _, s := range e.Processors {
-		if source.Equals(s.Processor) {
-			p.logger.Warnf("event '%s' detected forward loop (%s)", e.ID, peerAddr)
-			return event.ErrInternal
-		}
-	}
-	//add current processor
-	e.Processors = append(e.Processors,
-		event.ProcessInfo{
-			Received:  time.Now(),
-			Processor: source})
-	//enqueues event to process
-	newreq := &Request{
-		Event:      e,
-		Enqueued:   time.Now(),
-		Peer:       peerData,
-		StackTrace: make([]string, 0),
-		jumps:      make([]string, 0),
-	}
-	p.logger.Debugf("notify(%s)", e.ID)
-	if !p.closed {
-		p.events <- newreq
-	}
-	return nil
+
+	// complete data
+	procinfo := event.ProcessInfo{Received: time.Now(), Processor: event.GetDefaultSource()}
+	e.Processors = append(e.Processors, procinfo)
+
+	// enqueues event to process
+	return p.queueEvent(e, peerData)
 }
 
-// Close event processor
+// Close event processor.
 func (p *Processor) Close() {
 	if p.closed {
 		return
 	}
-	p.logger.Debugf("closing event processor")
+	p.logger.Infof("closing event processor")
 	p.closed = true
 	close(p.events)
 	p.wg.Wait()
 }
 
+// Request is used to store information of the event processing.
+type Request struct {
+	Event      event.Event
+	Enqueued   time.Time
+	Started    time.Time
+	Finished   time.Time
+	StackTrace []string
+	Peer       *peer.Peer
+	jumps      []string
+}
+
 func (p *Processor) init(nworkers int) {
-	p.logger.Debugf("starting event processor (%v workers)", nworkers)
+	p.logger.Infof("starting event processor (%v workers)", nworkers)
 	//create and init workers
 	p.wg.Add(nworkers)
 	for i := 0; i < nworkers; i++ {
@@ -262,4 +225,62 @@ func (p *Processor) processWorker(workerid int) {
 		}
 	}
 	p.logger.Debugf("closing worker %v", workerid)
+}
+
+func getPeerAddr(ctx context.Context) (p *peer.Peer, paddr string) {
+	var ok bool
+	p, ok = peer.FromContext(ctx)
+	if ok {
+		paddr = fmt.Sprintf("%v", p.Addr)
+	}
+	return
+}
+
+func (p *Processor) validateNotify(e event.Event) (def eventdb.EventDef, err error) {
+	if e.ID != "" {
+		err = errors.New("id not empty")
+		return
+	}
+	if len(e.Processors) > 0 {
+		err = errors.New("processors not empty")
+		return
+	}
+	var ok bool
+	def, ok = p.db.FindByCode(e.Code)
+	if !ok {
+		err = fmt.Errorf("code '%v' not found", e.Code)
+		return
+	}
+	err = def.ValidateData(e)
+	if err != nil {
+		err = fmt.Errorf("data not valid: %v", err)
+	}
+	return
+}
+
+func (p *Processor) validateForward(e event.Event) error {
+	if e.ID == "" {
+		return errors.New("event id is empty")
+	}
+	if len(e.Processors) == 0 {
+		return errors.New("event processors is empty")
+	}
+	//check loops
+	self := event.GetDefaultSource()
+	for _, s := range e.Processors {
+		if self.Equals(s.Processor) {
+			return errors.New("detected forward loop")
+		}
+	}
+	return nil
+}
+
+func (p *Processor) queueEvent(e event.Event, pinfo *peer.Peer) error {
+	// enqueues event to process
+	newreq := &Request{Event: e, Enqueued: time.Now(), Peer: pinfo}
+	if p.closed {
+		return event.ErrUnavailable
+	}
+	p.events <- newreq
+	return nil
 }

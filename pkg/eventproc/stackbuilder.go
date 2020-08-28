@@ -1,10 +1,6 @@
 // Copyright 2019 Luis Guillén Civera <luisguillenc@gmail.com>. View LICENSE.
 
-// Package stackbuilder facilitates the creation of stacks for the event
-// management processor.
-//
-// This package is a work in progress and makes no API stability promises.
-package stackbuilder
+package eventproc
 
 import (
 	"errors"
@@ -14,66 +10,69 @@ import (
 
 	"github.com/luids-io/core/apiservice"
 	"github.com/luids-io/core/yalogi"
-	"github.com/luids-io/event/pkg/eventproc"
 )
 
-// Builder helps to create stacks using definitions structs
+// FilterBuilder defines the signature for the constuctors of the filters.
+type FilterBuilder func(*Builder, *ItemDef) (ModuleFilter, error)
+
+// PluginBuilder defines the signature for the constuctors of the plugins.
+type PluginBuilder func(*Builder, *ItemDef) (ModulePlugin, error)
+
+// Builder helps to create stacks using definitions structs.
 type Builder struct {
-	opts   options
+	opts   buildOpts
 	logger yalogi.Logger
 
 	regsvc apiservice.Discover
-	stacks map[string]*eventproc.Stack
+	stacks map[string]*Stack
 
 	startup  []func() error
 	shutdown []func() error
 }
 
-type options struct {
+// BuilderOption is used for builder configuration
+type BuilderOption func(*buildOpts)
+
+type buildOpts struct {
 	logger   yalogi.Logger
 	certsDir string
 	dataDir  string
 	cacheDir string
 }
 
-var defaultOpts = options{
-	logger: yalogi.LogNull,
-}
+var defaultBuildOpts = buildOpts{logger: yalogi.LogNull}
 
-// Option is used for builder configuration
-type Option func(*options)
-
-// SetLogger sets a logger for the component
-func SetLogger(l yalogi.Logger) Option {
-	return func(o *options) {
+// SetBuildLogger sets a logger for the component
+func SetBuildLogger(l yalogi.Logger) BuilderOption {
+	return func(o *buildOpts) {
 		o.logger = l
 	}
 }
 
 // CertsDir sets certificate dir
-func CertsDir(s string) Option {
-	return func(o *options) {
+func CertsDir(s string) BuilderOption {
+	return func(o *buildOpts) {
 		o.certsDir = s
 	}
 }
 
 // DataDir sets data dir
-func DataDir(s string) Option {
-	return func(o *options) {
+func DataDir(s string) BuilderOption {
+	return func(o *buildOpts) {
 		o.dataDir = s
 	}
 }
 
 // CacheDir sets source dir
-func CacheDir(s string) Option {
-	return func(o *options) {
+func CacheDir(s string) BuilderOption {
+	return func(o *buildOpts) {
 		o.cacheDir = s
 	}
 }
 
-// New instances a new builder
-func New(regsvc apiservice.Discover, opt ...Option) *Builder {
-	opts := defaultOpts
+// NewBuilder instances a new builder
+func NewBuilder(regsvc apiservice.Discover, opt ...BuilderOption) *Builder {
+	opts := defaultBuildOpts
 	for _, o := range opt {
 		o(&opts)
 	}
@@ -81,7 +80,7 @@ func New(regsvc apiservice.Discover, opt ...Option) *Builder {
 		opts:     opts,
 		logger:   opts.logger,
 		regsvc:   regsvc,
-		stacks:   make(map[string]*eventproc.Stack),
+		stacks:   make(map[string]*Stack),
 		startup:  make([]func() error, 0),
 		shutdown: make([]func() error, 0),
 	}
@@ -96,16 +95,16 @@ func (b *Builder) StackNames() []string {
 	return names
 }
 
-// GetStack returns the stack with the name passed, it will returns false
+// Stack returns the stack with the name passed, it will returns false
 // if the stack has not been built
-func (b *Builder) GetStack(name string) (*eventproc.Stack, bool) {
+func (b *Builder) Stack(name string) (*Stack, bool) {
 	stack, ok := b.stacks[name]
 	return stack, ok
 }
 
 // Build construct a stack with the name passed and the modules defined by the
 // array ModuleDef
-func (b *Builder) Build(def StackDef) (*eventproc.Stack, error) {
+func (b *Builder) Build(def StackDef) (*Stack, error) {
 	b.logger.Debugf("building '%s'", def.Name)
 	if def.Name == "" {
 		return nil, errors.New("stack name is empty")
@@ -119,7 +118,7 @@ func (b *Builder) Build(def StackDef) (*eventproc.Stack, error) {
 		return nil, fmt.Errorf("'%s' is disabled", def.Name)
 	}
 	//create stack
-	stack = eventproc.NewStack(def.Name)
+	stack = NewStack(def.Name)
 	//create modules
 	names := make(map[string]bool)
 	for _, modDef := range def.Modules {
@@ -145,8 +144,8 @@ func (b *Builder) Build(def StackDef) (*eventproc.Stack, error) {
 	return stack, nil
 }
 
-func (b *Builder) buildModule(def ModuleDef) (*eventproc.Module, error) {
-	module := &eventproc.Module{
+func (b *Builder) buildModule(def ModuleDef) (*Module, error) {
+	module := &Module{
 		Name:      def.Name,
 		OnSuccess: def.OnSuccess,
 		OnError:   def.OnError,
@@ -259,4 +258,22 @@ func (b *Builder) Shutdown() error {
 		}
 	}
 	return ret
+}
+
+// RegisterFilter register a filter for the class name passed
+func RegisterFilter(class string, f FilterBuilder) {
+	filterBuilders[class] = f
+}
+
+// RegisterPlugin register a plugin for the class name passed
+func RegisterPlugin(class string, f PluginBuilder) {
+	pluginBuilders[class] = f
+}
+
+var filterBuilders map[string]FilterBuilder
+var pluginBuilders map[string]PluginBuilder
+
+func init() {
+	filterBuilders = make(map[string]FilterBuilder)
+	pluginBuilders = make(map[string]PluginBuilder)
 }

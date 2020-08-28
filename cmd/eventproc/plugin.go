@@ -10,9 +10,9 @@ import (
 	_ "github.com/luids-io/api/event/grpc/forward"
 
 	// event plugins
-	_ "github.com/luids-io/event/pkg/filters/basicexpr"
-	_ "github.com/luids-io/event/pkg/plugins/archiver"
-	_ "github.com/luids-io/event/pkg/plugins/executor"
-	_ "github.com/luids-io/event/pkg/plugins/forwarder"
-	_ "github.com/luids-io/event/pkg/plugins/jsonwriter"
+	_ "github.com/luids-io/event/pkg/eventproc/filters/basicexpr"
+	_ "github.com/luids-io/event/pkg/eventproc/plugins/archiver"
+	_ "github.com/luids-io/event/pkg/eventproc/plugins/executor"
+	_ "github.com/luids-io/event/pkg/eventproc/plugins/forwarder"
+	_ "github.com/luids-io/event/pkg/eventproc/plugins/jsonwriter"
 )

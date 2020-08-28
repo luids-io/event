@@ -9,16 +9,15 @@ import (
 	"github.com/luids-io/event/internal/config"
 	"github.com/luids-io/event/pkg/eventdb"
 	"github.com/luids-io/event/pkg/eventproc"
-	"github.com/luids-io/event/pkg/eventproc/stackbuilder"
 )
 
 // EventProc creates an event processor
-func EventProc(cfg *config.EventProcCfg, b *stackbuilder.Builder, db eventdb.Database, logger yalogi.Logger) (*eventproc.Processor, error) {
+func EventProc(cfg *config.EventProcCfg, b *eventproc.Builder, db eventdb.Database, logger yalogi.Logger) (*eventproc.Processor, error) {
 	err := cfg.Validate()
 	if err != nil {
 		return nil, fmt.Errorf("bad config: %v", err)
 	}
-	main, ok := b.GetStack(cfg.Stack.Main)
+	main, ok := b.Stack(cfg.Stack.Main)
 	if !ok {
 		return nil, fmt.Errorf("can't find main stack '%s'", cfg.Stack.Main)
 	}
@@ -26,7 +25,7 @@ func EventProc(cfg *config.EventProcCfg, b *stackbuilder.Builder, db eventdb.Dat
 	others := make([]*eventproc.Stack, 0, len(names)-1)
 	for _, name := range names {
 		if name != cfg.Stack.Main {
-			stack, _ := b.GetStack(name)
+			stack, _ := b.Stack(name)
 			others = append(others, stack)
 		}
 	}

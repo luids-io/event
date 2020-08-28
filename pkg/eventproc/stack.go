@@ -11,13 +11,13 @@ import (
 )
 
 // Stack is the struct used by the processor and contains the the modules that
-// will be executed
+// will be executed.
 type Stack struct {
 	name    string
 	modules []*Module
 }
 
-// NewStack returns a new Stack
+// NewStack returns a new Stack.
 func NewStack(name string) *Stack {
 	c := &Stack{
 		name:    name,
@@ -26,12 +26,12 @@ func NewStack(name string) *Stack {
 	return c
 }
 
-// Name returns the name of the stack
+// Name returns the name of the stack.
 func (c Stack) Name() string {
 	return c.name
 }
 
-// Add appends a module to the stack
+// Add appends a module to the stack.
 func (c *Stack) Add(m *Module) {
 	c.modules = append(c.modules, m)
 }
@@ -101,7 +101,7 @@ func (c *Stack) process(p *Processor, e *Request) (status StackAction, last int)
 	return
 }
 
-// Module defines the information that will be stacked for the processing
+// Module defines the information that will be stacked for the processing.
 type Module struct {
 	// Name of the module, it must be unique in the stack
 	Name string

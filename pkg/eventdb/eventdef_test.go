@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/luids-io/api/event"
-	"github.com/luids-io/api/event/eventdb"
+	"github.com/luids-io/event/pkg/eventdb"
 )
 
 func TestEventDef(t *testing.T) {

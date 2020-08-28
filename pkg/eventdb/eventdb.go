@@ -6,7 +6,7 @@ import (
 	"github.com/luids-io/api/event"
 )
 
-// Database defines
+// Database defines interface for event databases
 type Database interface {
 	FindByCode(event.Code) (EventDef, bool)
 }
@@ -15,7 +15,7 @@ type database struct {
 	defs map[event.Code]EventDef
 }
 
-// New returns Database
+// New returns a in memory Database.
 func New(defs []EventDef) Database {
 	db := &database{defs: make(map[event.Code]EventDef)}
 	for _, def := range defs {

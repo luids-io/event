@@ -2,10 +2,10 @@
 
 package eventproc
 
-// CbRequest defines the format of the callbacks used by the hooks
+// CbRequest defines the format of the callbacks used by the hooks.
 type CbRequest func(*Request)
 
-// Hooks stores information about the hooks
+// Hooks stores information about the hooks.
 type Hooks struct {
 	beforeProc   []CbRequest
 	afterProc    []CbRequest
@@ -14,7 +14,7 @@ type Hooks struct {
 	afterModule  []CbRequest
 }
 
-// NewHooks creates a new Hooks instance
+// NewHooks creates a new Hooks instance.
 func NewHooks() *Hooks {
 	return &Hooks{
 		beforeProc:   []CbRequest{},
@@ -25,27 +25,27 @@ func NewHooks() *Hooks {
 	}
 }
 
-// BeforeProc adds a callback that will be executed before the process starts
+// BeforeProc adds a callback that will be executed before the process starts.
 func (h *Hooks) BeforeProc(fn CbRequest) {
 	h.beforeProc = append(h.beforeProc, fn)
 }
 
-// AfterProc adds a callback that will be executed before the process end
+// AfterProc adds a callback that will be executed before the process end.
 func (h *Hooks) AfterProc(fn CbRequest) {
 	h.afterProc = append(h.afterProc, fn)
 }
 
-// FinishProc adds a callback that will be executed if the process finished ok
+// FinishProc adds a callback that will be executed if the process finished ok.
 func (h *Hooks) FinishProc(fn CbRequest) {
 	h.finishProc = append(h.finishProc, fn)
 }
 
-// BeforeModule adds a callback that will be executed before a stack module starts
+// BeforeModule adds a callback that will be executed before a stack module starts.
 func (h *Hooks) BeforeModule(fn CbRequest) {
 	h.beforeModule = append(h.beforeModule, fn)
 }
 
-// AfterModule adds a callback that will be executed before a stack module starts
+// AfterModule adds a callback that will be executed before a stack module starts.
 func (h *Hooks) AfterModule(fn CbRequest) {
 	h.afterModule = append(h.afterModule, fn)
 }

@@ -13,7 +13,7 @@ import (
 	"github.com/luids-io/api/event"
 )
 
-// EventDef defines events
+// EventDef defines events.
 type EventDef struct {
 	Code        event.Code `json:"code"`
 	Type        event.Type `json:"type"`
@@ -24,14 +24,14 @@ type EventDef struct {
 	RaisedBy    []string   `json:"raised_by,omitempty"`
 }
 
-// FieldDef stores field definitions
+// FieldDef stores field definitions.
 type FieldDef struct {
 	Name     string `json:"name"`
 	Type     string `json:"type"`
 	Required bool   `json:"required"`
 }
 
-// Complete event information from definition
+// Complete event information from definition.
 func (def *EventDef) Complete(e event.Event) event.Event {
 	ret := e
 	ret.Type = def.Type
@@ -65,7 +65,7 @@ func (def *EventDef) getDesc(e event.Event) string {
 
 var reBetweenBrackets = regexp.MustCompile(`\[([^\[\]]*)\]`)
 
-// ValidateData if event data is ok
+// ValidateData checks if event data is ok.
 func (def *EventDef) ValidateData(e event.Event) error {
 	metas := make(map[string]FieldDef, len(def.Fields))
 	for _, f := range def.Fields {
@@ -103,8 +103,8 @@ func (def *EventDef) ValidateData(e event.Event) error {
 	return nil
 }
 
-// DefsFromFile returns event definitions from files
-func DefsFromFile(path string) ([]EventDef, error) {
+// EventDefsFromFile returns event definitions from files.
+func EventDefsFromFile(path string) ([]EventDef, error) {
 	var stacks []EventDef
 	f, err := os.Open(path)
 	defer f.Close()

@@ -1,7 +1,6 @@
 // Copyright 2019 Luis Guillén Civera <luisguillenc@gmail.com>. View LICENSE.
 
-// Package basicexpr implements a filter for event processing.
-// It can be used for creating basic filters using a simple sintax.
+// Package basicexpr implements a basic expression filter for event processing.
 //
 // This package is a work in progress and makes no API stability promises.
 package basicexpr
@@ -13,16 +12,15 @@ import (
 
 	"github.com/luids-io/api/event"
 	"github.com/luids-io/event/pkg/eventproc"
-	"github.com/luids-io/event/pkg/eventproc/stackbuilder"
 )
 
-// BuildClass defines default class name of component builder
-const BuildClass = "basicexpr"
+// FilterClass registered.
+const FilterClass = "basicexpr"
 
-// Filter returns a module builder for basic expressions
-func Filter() stackbuilder.FilterBuilder {
-	return func(builder *stackbuilder.Builder, def *stackbuilder.ItemDef) (eventproc.ModuleFilter, error) {
-		builder.Logger().Debugf("building filter with args: %v", def.Args)
+// Builder returns a filter builder.
+func Builder() eventproc.FilterBuilder {
+	return func(b *eventproc.Builder, def *eventproc.ItemDef) (eventproc.ModuleFilter, error) {
+		b.Logger().Debugf("building filter with args: %v", def.Args)
 		if len(def.Args) != 3 {
 			return nil, errors.New("args must be 3")
 		}
@@ -401,5 +399,5 @@ func geData(field, op, value string) (eventproc.ModuleFilter, error) {
 }
 
 func init() {
-	stackbuilder.RegisterFilter(BuildClass, Filter())
+	eventproc.RegisterFilter(FilterClass, Builder())
 }

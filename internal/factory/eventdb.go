@@ -32,7 +32,7 @@ func EventDB(cfg *config.EventProcCfg, logger yalogi.Logger) (eventdb.Database, 
 func loadEventDefs(dbFiles []string) ([]eventdb.EventDef, error) {
 	loadedDB := make([]eventdb.EventDef, 0)
 	for _, file := range dbFiles {
-		entries, err := eventdb.DefsFromFile(file)
+		entries, err := eventdb.EventDefsFromFile(file)
 		if err != nil {
 			return nil, fmt.Errorf("couln't load database: %v", err)
 		}

@@ -1,7 +1,6 @@
 // Copyright 2019 Luis Guillén Civera <luisguillenc@gmail.com>. View LICENSE.
 
-// Package executor implements a plugin for event processing.
-// It can be used for execute commands using the events information.
+// Package executor implements a plugin for exec commands.
 //
 // This package is a work in progress and makes no API stability promises.
 package executor
@@ -15,16 +14,15 @@ import (
 
 	"github.com/luids-io/api/event"
 	"github.com/luids-io/event/pkg/eventproc"
-	"github.com/luids-io/event/pkg/eventproc/stackbuilder"
 )
 
-// BuildClass defines default class name of component builder
-const BuildClass = "executor"
+// PluginClass registered.
+const PluginClass = "executor"
 
-// Plugin returns a plugin that exec commands
-func Plugin() stackbuilder.PluginBuilder {
-	return func(builder *stackbuilder.Builder, def *stackbuilder.ItemDef) (eventproc.ModulePlugin, error) {
-		builder.Logger().Debugf("building plugin with args: %v", def.Args)
+// Builder returns a plugin builder.
+func Builder() eventproc.PluginBuilder {
+	return func(b *eventproc.Builder, def *eventproc.ItemDef) (eventproc.ModulePlugin, error) {
+		b.Logger().Debugf("building plugin with args: %v", def.Args)
 		if len(def.Args) == 0 {
 			return nil, errors.New("required arg")
 		}
@@ -47,7 +45,7 @@ func Plugin() stackbuilder.PluginBuilder {
 				}
 				fargs = append(fargs, arg)
 			}
-			builder.Logger().Debugf("exec %v %v", app, fargs)
+			b.Logger().Debugf("exec %v %v", app, fargs)
 			cmd := exec.Command(app, fargs...)
 			err := cmd.Run()
 			if err != nil {
@@ -86,5 +84,5 @@ func getField(field string, e *event.Event) string {
 }
 
 func init() {
-	stackbuilder.RegisterPlugin(BuildClass, Plugin())
+	eventproc.RegisterPlugin(PluginClass, Builder())
 }

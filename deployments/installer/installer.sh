@@ -326,11 +326,11 @@ create_base_config() {
 	fi
 
 	## create files
-	if [ ! -f $ETC_DIR/services.json ]; then
-		log "creating $ETC_DIR/services.json"
-		echo "[ ]" > $ETC_DIR/services.json
+	if [ ! -f $ETC_DIR/apiservices.json ]; then
+		log "creating $ETC_DIR/apiservices.json"
+		echo "[ ]" > $ETC_DIR/apiservices.json
 	else
-		log "$ETC_DIR/services.json already exists"
+		log "$ETC_DIR/apiservices.json already exists"
 	fi
 
 	step_ok
@@ -349,6 +349,23 @@ create_service_config() {
 
 	if [ ! -d $ETC_DIR/$NAME/events.d ]; then
 		do_create_dir $ETC_DIR/$NAME/events.d
+		[ $? -ne 0 ] && step_err && return 1
+		{ cat > $ETC_DIR/$NAME/events.d/00-test.json <<EOF
+[
+    {
+        "code": 10000,
+        "type": "security",
+        "codename": "test.security",
+        "tags": [ "test" ],
+        "description": "Test event with data: [data.test]",
+        "fields": [
+            { "name": "test", "type": "string", "required": true }
+        ],
+        "raised_by": [ "*" ]
+    }
+]
+EOF
+		} &>>$LOG_FILE
 		[ $? -ne 0 ] && step_err && return 1
 	else
 		log "$ETC_DIR/$NAME/events.d already exists"
@@ -369,7 +386,7 @@ files     = [ "${ETC_DIR}/stacks.json" ]
 dirs      = [ "${ETC_DIR}/events.d" ]
 
 [ids.api]
-files     = [ "${ETC_DIR}/services.json" ]
+files     = [ "${ETC_DIR}/apiservices.json" ]
 EOF
 		} &>>$LOG_FILE
 		[ $? -ne 0 ] && step_err && return 1

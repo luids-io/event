@@ -380,10 +380,10 @@ datadir   = "${VAR_DIR}/${NAME}"
 cachedir  = "${CACHE_DIR}/${NAME}"
 
 [eventproc.stack]
-files     = [ "${ETC_DIR}/stacks.json" ]
+files     = [ "${ETC_DIR}/$NAME/stacks.json" ]
 
 [eventproc.db]
-dirs      = [ "${ETC_DIR}/events.d" ]
+dirs      = [ "${ETC_DIR}/$NAME/events.d" ]
 
 [ids.api]
 files     = [ "${ETC_DIR}/apiservices.json" ]
@@ -404,12 +404,10 @@ EOF
       {
         "name": "archive",
         "filters": [
-          { "class": "basicexpr",
-            "args": [ "type", "==", "security" ] }
+          { "class": "basicexpr", "args": [ "type", "==", "security" ] }
         ],
         "plugins": [
-          { "class": "jsonwriter",
-            "args": [ "security-events.json" ] }
+          { "class": "jsonwriter", "args": [ "security-events.json" ] }
         ],
         "onsuccess": "next",
         "onerror": "stop"

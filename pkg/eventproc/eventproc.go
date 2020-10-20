@@ -139,10 +139,12 @@ func (p *Processor) NotifyEvent(ctx context.Context, e event.Event) (string, err
 		return "", event.ErrBadRequest
 	}
 
+	now := time.Now()
 	// complete event data
 	e.ID = p.opts.guidGen()
+	e.Received = now
 	e.Processors = []event.ProcessInfo{{
-		Received:  time.Now(),
+		Received:  now,
 		Processor: event.GetDefaultSource(),
 	}}
 	e = def.Complete(e)

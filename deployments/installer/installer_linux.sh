@@ -10,6 +10,7 @@ BIN_DIR=/usr/local/bin
 ETC_DIR=/etc/luids
 VAR_DIR=/var/lib/luids
 CACHE_DIR=/var/cache/luids
+SHARE_DIR=/usr/local/share
 SYSTEMD_DIR=/etc/systemd/system
 
 ## Service variables
@@ -22,7 +23,7 @@ BINARIES="eventproc eventnotify"
 ## Download
 DOWNLOAD_BASE="https://github.com/luids-io/${NAME}/releases/download"
 DOWNLOAD_URI="${DOWNLOAD_BASE}/v${RELEASE}/${NAME}_${RELEASE}_linux_${ARCH}.tgz"
-
+DATABASE_GIT="https://github.com/luids-io/${NAME}-database"
 ##
 
 die() { echo "error: $@" 1>&2 ; exit 1 ; }
@@ -65,6 +66,7 @@ show_actions() {
 	echo ". Create cache dirs in '${CACHE_DIR}'"
 	echo ". Create config dirs in '${ETC_DIR}'"
 	[ -d $SYSTEMD_DIR ] && echo ". Copy systemd configurations to '${SYSTEMD_DIR}'"
+	echo ". Install helper scripts in '${BIN_DIR}'"
 	echo ""
 }
 
@@ -243,6 +245,44 @@ install_binaries() {
         	do_clean_file $binary
 	done
 
+	step_ok
+}
+
+install_helper_scripts() {
+	step "Installing helper scripts"
+
+	log "creating ${BIN_DIR}/${NAME}_database"
+	{ cat > ${BIN_DIR}/${NAME}_database <<EOF
+#!/bin/bash
+
+EXECUSER=${SVC_USER}
+HOMEUSER=${VAR_DIR}/${NAME}
+GITREPO=${DATABASE_GIT}
+DBDIR=${SHARE_DIR}/${NAME}-database
+
+die() { echo "error: \$@" 1>&2 ; exit 1; }
+
+# some checks...
+which git &>/dev/null
+[ \$? -eq 0 ] || die "git not installed"
+getent passwd \$EXECUSER >/dev/null
+[ \$? -eq 0 ] || die "User \$EXECUSER doesn't exist!" 
+
+[[ \$EUID -eq 0 ]] || die "This script must be run as root"
+
+if [ ! -d \$DBDIR ]; then
+    mkdir -p \$DBDIR
+    chown \$EXECUSER \$DBDIR
+    su \$EXECUSER -p -c "HOME=\$HOMEUSER git clone \$GITREPO \$DBDIR"
+else
+    su \$EXECUSER -p -c "HOME=\$HOMEUSER git -C \$DBDIR pull"
+fi
+EOF
+	chown root:root ${BIN_DIR}/${NAME}_database
+	chmod 755 ${BIN_DIR}/${NAME}_database
+	} &>>$LOG_FILE
+	[ $? -ne 0 ] && step_err && return 1
+	
 	step_ok
 }
 
@@ -487,6 +527,7 @@ create_cache_dir || die "Show $LOG_FILE"
 create_base_config || die "Show $LOG_FILE"
 create_service_config || die "Show $LOG_FILE"
 [ -d $SYSTEMD_DIR ] && { install_systemd_services || die "Show $LOG_FILE for details." ; }
+install_helper_scripts || die "Show $LOG_FILE"
 
 echo
 echo "Installation success!. You can see $LOG_FILE for details."

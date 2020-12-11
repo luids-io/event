@@ -27,16 +27,17 @@ LABEL maintainer="Luis Guillén Civera <luisguillenc@gmail.com>"
 RUN apk update && apk add --no-cache ca-certificates && update-ca-certificates
 
 # create user for service
-RUN adduser -D -g 'luids' luevent && \
-	mkdir -p /etc/luids/event/event.d && \
-	mkdir -p /var/lib/luids/event && \
-	mkdir -p /var/cache/luids/event && \
-	chown luevent /var/lib/luids/event && \
-	chown luevent /var/cache/luids/event
+RUN adduser -D -g 'luids' luevent \
+	&& mkdir -p /var/lib/luids/event \
+	&& mkdir -p /var/cache/luids/event \
+    && touch /var/lib/luids/event/.keep \
+	&& touch /var/cache/luids/event/.keep \
+	&& chown -R luevent /var/lib/luids/event \
+	&& chown -R luevent /var/cache/luids/event
 
 COPY --from=build-env /app/bin/* /bin/
 COPY --from=build-env /app/configs/docker/apiservices.json /etc/luids/
-COPY --from=build-env /app/configs/docker/eventproc/* /etc/luids/event/
+COPY --from=build-env /app/configs/docker/event/ /etc/luids/event/
 
 USER luevent
 

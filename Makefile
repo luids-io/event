@@ -45,7 +45,7 @@ clean:
 
 docker:
 	@echo "$(WHALE) $@"
-	DOCKER_BUILDKIT=1 docker build -t eventproc -f Dockerfile.eventproc .
+	DOCKER_BUILDKIT=1 docker build --progress=plain -t eventproc -f Dockerfile.eventproc .
 
 ## Targets for Makefile.release
 .PHONY: release
